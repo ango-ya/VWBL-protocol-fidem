@@ -57,6 +57,8 @@ contract VWBLFidemToken is
         uint256 timestamp;
         string fidemInvoiceId;
         string paymentInvoiceId;
+        address[] recipients; // Revenue share recipients at time of purchase
+        uint256[] shares; // Revenue share percentages at time of purchase (basis points)
     }
 
     struct TransferStatus {
@@ -246,7 +248,11 @@ contract VWBLFidemToken is
         uint256 vwblFee = getFee();
         require(msg.value >= vwblFee, "Insufficient VWBL fee");
 
-        // Create receipt
+        // Get current revenue share configuration
+        RevenueShareConfig memory config = tokenIdToRevenueShare[tokenId];
+        require(config.isConfigured, "Revenue share not configured");
+
+        // Create receipt with immutable snapshot of share configuration at purchase time
         uint256 receiptId = ++receiptCounter;
         receipts[receiptId] = MintReceipt({
             receiptId: receiptId,
@@ -255,7 +261,9 @@ contract VWBLFidemToken is
             saleAmount: saleAmount,
             timestamp: block.timestamp,
             fidemInvoiceId: fidemInvoiceId,
-            paymentInvoiceId: paymentInvoiceId
+            paymentInvoiceId: paymentInvoiceId,
+            recipients: config.recipients,
+            shares: config.shares
         });
 
         // Store receipt IDs

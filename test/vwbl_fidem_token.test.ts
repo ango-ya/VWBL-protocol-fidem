@@ -261,6 +261,46 @@ describe("VWBLFidemToken", () => {
                 expect(storedReceipt.paymentInvoiceId).to.equal("STRIPE-123")
             })
 
+            it("should store immutable snapshot of revenue share at purchase time", async () => {
+                const saleAmount = utils.parseEther("100")
+
+                // First purchase with original share configuration [6000, 4000]
+                const tx1 = await vwblFidemToken
+                    .connect(tokenOwner)
+                    .mint(tokenId, customer1.address, saleAmount, "FIDEM-001", "STRIPE-123", { value: fee })
+
+                const receipt1 = await tx1.wait()
+                const receiptId1 = receipt1.events?.find((e: any) => e.event === "TokenMinted")?.args?.receiptId
+
+                // Verify first receipt has original shares
+                const storedReceipt1 = await vwblFidemToken.getReceipt(receiptId1)
+                expect(storedReceipt1.recipients).to.deep.equal([recipient1.address, recipient2.address])
+                expect(storedReceipt1.shares.map((s: any) => s.toNumber())).to.deep.equal([6000, 4000])
+
+                // Update revenue share configuration to [5000, 5000]
+                const newRecipients = [recipient1.address, recipient2.address]
+                const newShares = [5000, 5000]
+                await vwblFidemToken.connect(tokenOwner).updateRevenueShare(tokenId, newRecipients, newShares)
+
+                // Second purchase with new share configuration [5000, 5000]
+                const tx2 = await vwblFidemToken
+                    .connect(tokenOwner)
+                    .mint(tokenId, customer2.address, saleAmount, "FIDEM-002", "STRIPE-456", { value: fee })
+
+                const receipt2 = await tx2.wait()
+                const receiptId2 = receipt2.events?.find((e: any) => e.event === "TokenMinted")?.args?.receiptId
+
+                // Verify second receipt has new shares
+                const storedReceipt2 = await vwblFidemToken.getReceipt(receiptId2)
+                expect(storedReceipt2.recipients).to.deep.equal([recipient1.address, recipient2.address])
+                expect(storedReceipt2.shares.map((s: any) => s.toNumber())).to.deep.equal([5000, 5000])
+
+                // CRITICAL: Verify first receipt STILL has original shares (immutable)
+                const storedReceipt1Again = await vwblFidemToken.getReceipt(receiptId1)
+                expect(storedReceipt1Again.recipients).to.deep.equal([recipient1.address, recipient2.address])
+                expect(storedReceipt1Again.shares.map((s: any) => s.toNumber())).to.deep.equal([6000, 4000])
+            })
+
             it("should emit TokenMinted and ReceiptCreated events", async () => {
                 const saleAmount = utils.parseEther("100")
 
