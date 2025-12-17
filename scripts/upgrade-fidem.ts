@@ -14,11 +14,11 @@ async function main() {
 
     console.log("Upgrading VWBLFidemToken at proxy address:", proxyAddress)
 
-    // Get the new contract factory (V2)
-    const VWBLFidemTokenV2 = await ethers.getContractFactory("VWBLFidemTokenV2")
+    // Get the new contract factory
+    const VWBLFidemToken = await ethers.getContractFactory("VWBLFidemToken")
 
     console.log("Upgrading proxy...")
-    const upgraded = await upgrades.upgradeProxy(proxyAddress, VWBLFidemTokenV2)
+    const upgraded = await upgrades.upgradeProxy(proxyAddress, VWBLFidemToken)
 
     console.log("VWBLFidemToken upgraded successfully")
     console.log("Proxy address (unchanged):", upgraded.address)
