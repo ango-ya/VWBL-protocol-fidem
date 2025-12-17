@@ -209,9 +209,6 @@ contract VWBLFidemToken is
             isConfigured: true
         });
 
-        // Mint 1 token to creator for permanent view access
-        _mint(msg.sender, tokenId, 1, "");
-
         // Integrate with VWBL gateway
         IAccessControlCheckerByERC1155(accessCheckerContract).grantAccessControlAndRegisterERC1155{
             value: msg.value

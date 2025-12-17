@@ -124,18 +124,6 @@ describe("VWBLFidemToken", () => {
                 expect(await vwblFidemToken.tokenOwners(tokenId)).to.equal(tokenOwner.address)
             })
 
-            it("should mint 1 token to the creator for permanent view access", async () => {
-                const recipients = [recipient1.address, recipient2.address]
-                const shares = [6000, 4000]
-
-                await vwblFidemToken
-                    .connect(tokenOwner)
-                    .create("https://vwbl.network/key", TEST_DOCUMENT_ID1, recipients, shares, { value: fee })
-
-                const balance = await vwblFidemToken.balanceOf(tokenOwner.address, 1)
-                expect(balance).to.equal(1)
-            })
-
             it("should store revenue share configuration correctly", async () => {
                 const recipients = [recipient1.address, recipient2.address]
                 const shares = [7000, 3000] // 70% / 30%
