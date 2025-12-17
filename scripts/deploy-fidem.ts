@@ -7,6 +7,16 @@ import { ethers, upgrades } from "hardhat"
 import * as dotenv from "dotenv"
 dotenv.config()
 
+function requireEnv(name: string): string {
+    const value = process.env[name]
+    if (!value) {
+        console.error(`Error: ${name} environment variable is not set`)
+        console.error(`Please set ${name} in your config/.env.* file`)
+        process.exit(1)
+    }
+    return value
+}
+
 async function main() {
     // Hardhat always runs the compile task when running scripts with its command
     // line interface.
@@ -15,12 +25,12 @@ async function main() {
     // manually to make sure everything is compiled
     // await hre.run('compile');
 
-    const baseURI = process.env.METADATA_URL!
+    const baseURI = requireEnv("METADATA_URL")
     console.log("VWBL Metadata URL: ", baseURI)
 
-    const gatewayProxyContractAddress = process.env.GATEWAY_PROXY_ADDRESS!
-    const accessControlCheckerByERC1155ContractAddress = process.env.ACCESS_CONTROL_CHECKER_BY_ERC1155_ADDRESS!
-    const messageToBeSigned = process.env.MESSAGE_TO_BE_SIGNED!
+    const gatewayProxyContractAddress = requireEnv("GATEWAY_PROXY_ADDRESS")
+    const accessControlCheckerByERC1155ContractAddress = requireEnv("ACCESS_CONTROL_CHECKER_BY_ERC1155_ADDRESS")
+    const messageToBeSigned = requireEnv("MESSAGE_TO_BE_SIGNED")
     console.log("Message to be signed: ", messageToBeSigned)
 
     console.log("Deploying VWBLFidemToken with UUPS proxy pattern...")
