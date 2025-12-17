@@ -124,6 +124,30 @@ describe("VWBLFidemToken", () => {
                 expect(await vwblFidemToken.tokenOwners(tokenId)).to.equal(tokenOwner.address)
             })
 
+            it("should grant access control to token owner without minting token", async () => {
+                const recipients = [recipient1.address, recipient2.address]
+                const shares = [6000, 4000]
+
+                const tx = await vwblFidemToken
+                    .connect(tokenOwner)
+                    .create("https://vwbl.network/key", TEST_DOCUMENT_ID1, recipients, shares, { value: fee })
+
+                const receipt = await tx.wait()
+                const tokenId = receipt.events?.find((e: any) => e.event === "TokenCreated")?.args?.tokenId
+
+                // Verify token owner does NOT hold any tokens
+                const balance = await vwblFidemToken.balanceOf(tokenOwner.address, tokenId)
+                expect(balance).to.equal(0)
+
+                // Verify token owner is recorded as minter (which grants access control)
+                const tokenInfo = await vwblFidemToken.tokenIdToTokenInfo(tokenId)
+                expect(tokenInfo.minterAddress).to.equal(tokenOwner.address)
+                expect(tokenInfo.documentId).to.equal(TEST_DOCUMENT_ID1)
+
+                // Token owner has access control through minter status, not token ownership
+                expect(await vwblFidemToken.tokenOwners(tokenId)).to.equal(tokenOwner.address)
+            })
+
             it("should store revenue share configuration correctly", async () => {
                 const recipients = [recipient1.address, recipient2.address]
                 const shares = [7000, 3000] // 70% / 30%
