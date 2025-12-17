@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 // OpenZeppelin Upgradeable contracts
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -30,8 +29,7 @@ contract VWBLFidemToken is
     AbstractVWBLTokenUpgradeable,
     UUPSUpgradeable,
     ERC1155Upgradeable,
-    ERC1155BurnableUpgradeable,
-    ERC2981Upgradeable
+    ERC1155BurnableUpgradeable
 {
     using SafeMath for uint256;
     using Strings for uint256;
@@ -137,7 +135,6 @@ contract VWBLFidemToken is
         __AbstractVWBLToken_init(_baseURI, _gatewayProxy, _accessCheckerContract, _signMessage);
         __ERC1155_init(_baseURI);
         __ERC1155Burnable_init();
-        __ERC2981_init();
         __UUPSUpgradeable_init();
 
         // Initialize VWBLFidemToken-specific state
@@ -159,7 +156,7 @@ contract VWBLFidemToken is
         public
         view
         virtual
-        override(ERC1155Upgradeable, ERC2981Upgradeable)
+        override(ERC1155Upgradeable)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
