@@ -590,6 +590,22 @@ describe("VWBLFidemToken", () => {
             expect(receipts.length).to.equal(1)
             expect(receipts[0].receiptId).to.equal(receiptId1)
         })
+
+        it("should return empty array for token with no receipts", async () => {
+            // Create a new token without minting
+            const newRecipients = [recipient1.address]
+            const newShares = [10000]
+            await vwblFidemToken
+                .connect(tokenOwner)
+                .create("https://example.com", ethers.utils.formatBytes32String("doc2"), newRecipients, newShares, {
+                    value: fee,
+                })
+            const newTokenId = 2
+
+            // Should return empty array, not revert
+            const receipts = await vwblFidemToken.getReceiptsByTokenPaginated(newTokenId, 0, 10)
+            expect(receipts.length).to.equal(0)
+        })
     })
 
     describe("Upgradeability", () => {

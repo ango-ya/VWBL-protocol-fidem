@@ -493,6 +493,12 @@ contract VWBLFidemToken is
         uint256 limit
     ) public view returns (MintReceipt[] memory) {
         uint256[] memory receiptIds = tokenIdToReceipts[tokenId];
+
+        // Return empty array if no receipts exist
+        if (receiptIds.length == 0) {
+            return new MintReceipt[](0);
+        }
+
         require(offset < receiptIds.length, "Offset out of bounds");
 
         uint256 end = offset + limit > receiptIds.length ? receiptIds.length : offset + limit;
