@@ -36,18 +36,17 @@ contract VWBLFidemToken is
     using SafeMath for uint256;
     using Strings for uint256;
 
+    // ============ Constants ============
+
+    uint256 public constant BASIS_POINTS_TOTAL = 10000; // 100% = 10000 basis points
+
     // ============ Structs ============
 
     struct RevenueShareConfig {
         address[] recipients;
         uint256[] shares; // Basis points (5000 = 50%)
-        uint256 totalShares; // Must equal 10000
+        uint256 totalShares; // Must equal BASIS_POINTS_TOTAL
         bool isConfigured;
-    }
-
-    struct RevenueShareDistribution {
-        address[] recipients;
-        uint256[] amounts;
     }
 
     struct MintReceipt {
@@ -58,7 +57,6 @@ contract VWBLFidemToken is
         uint256 timestamp;
         string fidemInvoiceId;
         string paymentInvoiceId;
-        RevenueShareDistribution distribution;
     }
 
     struct TransferStatus {
@@ -184,13 +182,13 @@ contract VWBLFidemToken is
         require(_recipients.length == _shares.length, "Array length mismatch");
         require(_recipients.length > 0, "Empty recipients");
 
-        // Validate shares sum to 10000
+        // Validate shares sum to BASIS_POINTS_TOTAL
         uint256 totalShares = 0;
         for (uint256 i = 0; i < _shares.length; i++) {
             require(_recipients[i] != address(0), "Zero address recipient");
             totalShares += _shares[i];
         }
-        require(totalShares == 10000, "Shares must equal 10000");
+        require(totalShares == BASIS_POINTS_TOTAL, "Shares must equal BASIS_POINTS_TOTAL");
 
         // Generate token ID
         uint256 tokenId = ++counter;
@@ -248,9 +246,6 @@ contract VWBLFidemToken is
         uint256 vwblFee = getFee();
         require(msg.value >= vwblFee, "Insufficient VWBL fee");
 
-        // Calculate revenue distribution
-        RevenueShareDistribution memory distribution = _calculateRevenueDistribution(tokenId, saleAmount);
-
         // Create receipt
         uint256 receiptId = ++receiptCounter;
         receipts[receiptId] = MintReceipt({
@@ -260,8 +255,7 @@ contract VWBLFidemToken is
             saleAmount: saleAmount,
             timestamp: block.timestamp,
             fidemInvoiceId: fidemInvoiceId,
-            paymentInvoiceId: paymentInvoiceId,
-            distribution: distribution
+            paymentInvoiceId: paymentInvoiceId
         });
 
         // Store receipt IDs
@@ -288,24 +282,6 @@ contract VWBLFidemToken is
         emit ReceiptCreated(receiptId, tokenId, customer);
 
         return receiptId;
-    }
-
-    // ============ Revenue Distribution Helper ============
-
-    function _calculateRevenueDistribution(uint256 tokenId, uint256 saleAmount)
-        private
-        view
-        returns (RevenueShareDistribution memory)
-    {
-        RevenueShareConfig memory config = tokenIdToRevenueShare[tokenId];
-        require(config.isConfigured, "Revenue share not configured");
-
-        uint256[] memory amounts = new uint256[](config.recipients.length);
-        for (uint256 i = 0; i < config.recipients.length; i++) {
-            amounts[i] = (saleAmount * config.shares[i]) / 10000;
-        }
-
-        return RevenueShareDistribution({recipients: config.recipients, amounts: amounts});
     }
 
     // ============ Revenue Share Management ============
@@ -349,7 +325,7 @@ contract VWBLFidemToken is
             totalShares += _shares[i];
             require(_recipients[i] != address(0), "Zero address");
         }
-        require(totalShares == 10000, "Shares must equal 10000");
+        require(totalShares == BASIS_POINTS_TOTAL, "Shares must equal BASIS_POINTS_TOTAL");
 
         tokenIdToRevenueShare[tokenId] = RevenueShareConfig({
             recipients: _recipients,

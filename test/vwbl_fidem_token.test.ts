@@ -183,7 +183,7 @@ describe("VWBLFidemToken", () => {
                     vwblFidemToken
                         .connect(tokenOwner)
                         .create("https://vwbl.network/key", TEST_DOCUMENT_ID1, recipients, shares, { value: fee })
-                ).to.be.revertedWith("Shares must equal 10000")
+                ).to.be.revertedWith("Shares must equal BASIS_POINTS_TOTAL")
             })
 
             it("should revert if recipient is zero address", async () => {
@@ -259,24 +259,6 @@ describe("VWBLFidemToken", () => {
                 expect(storedReceipt.saleAmount).to.equal(saleAmount)
                 expect(storedReceipt.fidemInvoiceId).to.equal("FIDEM-001")
                 expect(storedReceipt.paymentInvoiceId).to.equal("STRIPE-123")
-            })
-
-            it("should calculate revenue distribution correctly", async () => {
-                const saleAmount = utils.parseEther("100")
-
-                const tx = await vwblFidemToken
-                    .connect(tokenOwner)
-                    .mint(tokenId, customer1.address, saleAmount, "FIDEM-001", "STRIPE-123", { value: fee })
-
-                const receipt = await tx.wait()
-                const receiptId = receipt.events?.find((e: any) => e.event === "TokenMinted")?.args?.receiptId
-
-                const storedReceipt = await vwblFidemToken.getReceipt(receiptId)
-
-                // 6000 basis points = 60% of 100 ETH = 60 ETH
-                expect(storedReceipt.distribution.amounts[0]).to.equal(utils.parseEther("60"))
-                // 4000 basis points = 40% of 100 ETH = 40 ETH
-                expect(storedReceipt.distribution.amounts[1]).to.equal(utils.parseEther("40"))
             })
 
             it("should emit TokenMinted and ReceiptCreated events", async () => {
@@ -428,7 +410,7 @@ describe("VWBLFidemToken", () => {
 
                 await expect(
                     vwblFidemToken.connect(tokenOwner).updateRevenueShare(tokenId, newRecipients, newShares)
-                ).to.be.revertedWith("Shares must equal 10000")
+                ).to.be.revertedWith("Shares must equal BASIS_POINTS_TOTAL")
             })
         })
     })
