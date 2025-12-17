@@ -528,7 +528,8 @@ describe("VWBLFidemToken", () => {
                     .connect(owner)
                     .safeTransferByOwner(customer1.address, customer2.address, tokenId, 1)
 
-                const status = await vwblFidemToken.transferStatus(tokenId, customer1.address)
+                // Should mark the TO address (customer2), not FROM address
+                const status = await vwblFidemToken.transferStatus(tokenId, customer2.address)
                 expect(status.hasTransferred).to.be.true
                 expect(status.transferredTo).to.equal(customer2.address)
             })
@@ -545,22 +546,18 @@ describe("VWBLFidemToken", () => {
         })
 
         context("When attempting second transfer", () => {
-            it("should block second transfer from the same address", async () => {
-                // First transfer succeeds
+            it("should block transfer from address that received via owner transfer", async () => {
+                // First transfer: customer1 → customer2 (succeeds)
                 await vwblFidemToken
                     .connect(owner)
                     .safeTransferByOwner(customer1.address, customer2.address, tokenId, 1)
 
-                // Mint another token to customer1
-                await vwblFidemToken
-                    .connect(tokenOwner)
-                    .mint(tokenId, customer1.address, utils.parseEther("50"), "FIDEM-002", "STRIPE-124", { value: fee })
-
-                // Second transfer should fail
+                // Second transfer: customer2 → recipient1 (should fail)
+                // customer2 received via owner transfer, so cannot send via owner transfer
                 await expect(
                     vwblFidemToken
                         .connect(owner)
-                        .safeTransferByOwner(customer1.address, customer2.address, tokenId, 1)
+                        .safeTransferByOwner(customer2.address, recipient1.address, tokenId, 1)
                 ).to.be.revertedWith("Already transferred")
             })
         })

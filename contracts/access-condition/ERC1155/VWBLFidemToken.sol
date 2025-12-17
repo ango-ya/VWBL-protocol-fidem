@@ -373,11 +373,11 @@ contract VWBLFidemToken is
         require(from != address(0), "Transfer from zero address");
         require(to != address(0), "Transfer to zero address");
 
-        // Check transfer hasn't happened yet
+        // Check if FROM address has already received via owner transfer
         require(!transferStatus[id][from].hasTransferred, "Already transferred");
 
-        // Mark as transferred
-        transferStatus[id][from] = TransferStatus({
+        // Mark TO address as having received via owner transfer (prevents recipient from transferring again)
+        transferStatus[id][to] = TransferStatus({
             hasTransferred: true,
             transferredTo: to,
             transferTimestamp: block.timestamp
