@@ -317,6 +317,42 @@ describe("VWBLFidemToken", () => {
                 ).to.be.revertedWith("Insufficient VWBL fee")
             })
         })
+
+        context("When customer address is zero", () => {
+            it("should revert", async () => {
+                await expect(
+                    vwblFidemToken
+                        .connect(tokenOwner)
+                        .mint(tokenId, ethers.constants.AddressZero, utils.parseEther("100"), "FIDEM-001", "STRIPE-123", {
+                            value: fee,
+                        })
+                ).to.be.revertedWith("Invalid customer address")
+            })
+        })
+
+        context("When excess ETH is provided", () => {
+            it("should refund excess ETH to msg.sender", async () => {
+                const excessFee = utils.parseEther("2.0") // 2 ETH when only 1 ETH is required
+                const balanceBefore = await tokenOwner.getBalance()
+
+                const tx = await vwblFidemToken
+                    .connect(tokenOwner)
+                    .mint(tokenId, customer1.address, utils.parseEther("100"), "FIDEM-001", "STRIPE-123", {
+                        value: excessFee,
+                    })
+                const receipt = await tx.wait()
+
+                const balanceAfter = await tokenOwner.getBalance()
+                const gasUsed = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+
+                // Balance should be: before - fee - gas + refund
+                // Or: before - fee - gas, since refund = excessFee - fee
+                // So: before - excessFee - gas + (excessFee - fee) = before - fee - gas
+                const expectedBalance = balanceBefore.sub(fee).sub(gasUsed)
+
+                expect(balanceAfter).to.equal(expectedBalance)
+            })
+        })
     })
 
     describe("Revenue Share Management", () => {

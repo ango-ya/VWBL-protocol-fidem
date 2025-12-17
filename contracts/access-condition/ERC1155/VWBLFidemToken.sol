@@ -239,7 +239,8 @@ contract VWBLFidemToken is
         string memory fidemInvoiceId,
         string memory paymentInvoiceId
     ) public payable returns (uint256) {
-        // Authorization check
+        // Input validation
+        require(customer != address(0), "Invalid customer address");
         require(tokenOwners[tokenId] == msg.sender, "Only Token Owner can mint");
         require(tokenIdToTokenInfo[tokenId].minterAddress != address(0), "Token does not exist");
 
@@ -267,11 +268,18 @@ contract VWBLFidemToken is
         tokenIdToReceipts[tokenId].push(receiptId);
         customerToReceipts[customer].push(receiptId);
 
-        // Pay VWBL fee to gateway
-        IVWBLGateway(getGatewayAddress()).payFee{value: msg.value}(
+        // Pay VWBL fee to gateway (only the required fee amount)
+        IVWBLGateway(getGatewayAddress()).payFee{value: vwblFee}(
             tokenIdToTokenInfo[tokenId].documentId,
             customer
         );
+
+        // Refund excess ETH if any
+        if (msg.value > vwblFee) {
+            uint256 refund = msg.value - vwblFee;
+            (bool success, ) = payable(msg.sender).call{value: refund}("");
+            require(success, "Refund failed");
+        }
 
         // Mint token to customer
         _mint(customer, tokenId, 1, "");
