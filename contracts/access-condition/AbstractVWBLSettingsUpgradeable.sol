@@ -77,7 +77,10 @@ abstract contract AbstractVWBLSettingsUpgradeable is Initializable, IVWBL, Acces
      * @param newAccessCheckerContract The contract address of new access condition contract
      */
     function setAccessCheckerContract(address newAccessCheckerContract) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(newAccessCheckerContract != accessCheckerContract, "New accessCheckerContract must be different from current");
+        require(
+            newAccessCheckerContract != accessCheckerContract,
+            "New accessCheckerContract must be different from current"
+        );
         address oldAccessCheckerContract = accessCheckerContract;
         accessCheckerContract = newAccessCheckerContract;
 

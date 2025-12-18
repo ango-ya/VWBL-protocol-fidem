@@ -100,12 +100,7 @@ contract VWBLFidemToken is
 
     // ============ Events ============
 
-    event TokenCreated(
-        uint256 indexed tokenId,
-        bytes32 documentId,
-        address[] recipients,
-        uint256[] shares
-    );
+    event TokenCreated(uint256 indexed tokenId, bytes32 documentId, address[] recipients, uint256[] shares);
 
     event TokenMinted(
         uint256 indexed receiptId,
