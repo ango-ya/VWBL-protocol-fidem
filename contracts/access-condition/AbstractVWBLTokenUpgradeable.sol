@@ -39,7 +39,7 @@ abstract contract AbstractVWBLTokenUpgradeable is AbstractVWBLSettingsUpgradeabl
      * @notice Set BaseURI.
      * @param _baseURI new BaseURI
      */
-    function setBaseURI(string memory _baseURI) public onlyOwner {
+    function setBaseURI(string memory _baseURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
         baseURI = _baseURI;
     }
 

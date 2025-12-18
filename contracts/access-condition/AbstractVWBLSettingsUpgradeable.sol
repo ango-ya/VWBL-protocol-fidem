@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./IVWBL.sol";
 import "../gateway/IGatewayProxy.sol";
 import "../gateway/IVWBLGateway.sol";
 
-abstract contract AbstractVWBLSettingsUpgradeable is Initializable, IVWBL, OwnableUpgradeable {
+abstract contract AbstractVWBLSettingsUpgradeable is Initializable, IVWBL, AccessControlUpgradeable {
     address public gatewayProxy;
     string private signMessage;
     string private allowOrigins;
@@ -25,7 +25,7 @@ abstract contract AbstractVWBLSettingsUpgradeable is Initializable, IVWBL, Ownab
         address _accessCheckerContract,
         string memory _signMessage
     ) internal onlyInitializing {
-        __Ownable_init();
+        __AccessControl_init();
         __AbstractVWBLSettings_init_unchained(_gatewayProxy, _accessCheckerContract, _signMessage);
     }
 
@@ -60,7 +60,7 @@ abstract contract AbstractVWBLSettingsUpgradeable is Initializable, IVWBL, Ownab
     /**
      * @notice Set the message to be signed of this contract
      */
-    function setSignMessage(string calldata _signMessage) public onlyOwner {
+    function setSignMessage(string calldata _signMessage) public onlyRole(DEFAULT_ADMIN_ROLE) {
         signMessage = _signMessage;
     }
 
@@ -68,7 +68,7 @@ abstract contract AbstractVWBLSettingsUpgradeable is Initializable, IVWBL, Ownab
         return allowOrigins;
     }
 
-    function setAllowOrigins(string memory _origins) public onlyOwner {
+    function setAllowOrigins(string memory _origins) public onlyRole(DEFAULT_ADMIN_ROLE) {
         allowOrigins = _origins;
     }
 
@@ -76,7 +76,7 @@ abstract contract AbstractVWBLSettingsUpgradeable is Initializable, IVWBL, Ownab
      * @notice Set new access condition contract address
      * @param newAccessCheckerContract The contract address of new access condition contract
      */
-    function setAccessCheckerContract(address newAccessCheckerContract) public onlyOwner {
+    function setAccessCheckerContract(address newAccessCheckerContract) public onlyRole(DEFAULT_ADMIN_ROLE) {
         require(newAccessCheckerContract != accessCheckerContract);
         address oldAccessCheckerContract = accessCheckerContract;
         accessCheckerContract = newAccessCheckerContract;

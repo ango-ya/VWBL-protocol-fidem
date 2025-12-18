@@ -98,7 +98,7 @@ describe("VWBLFidemToken", () => {
             expect(await vwblFidemToken.receiptCounter()).to.equal(0)
         })
 
-        it("should set the deployer as owner", async () => {
+        it("should grant DEFAULT_ADMIN_ROLE to deployer", async () => {
             const VWBLFidemToken = await ethers.getContractFactory("VWBLFidemToken")
 
             vwblFidemToken = await upgrades.deployProxy(
@@ -119,7 +119,8 @@ describe("VWBLFidemToken", () => {
             await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
 
 
-            expect(await vwblFidemToken.owner()).to.equal(owner.address)
+            const DEFAULT_ADMIN_ROLE = await vwblFidemToken.DEFAULT_ADMIN_ROLE()
+            expect(await vwblFidemToken.hasRole(DEFAULT_ADMIN_ROLE, owner.address)).to.be.true
         })
     })
 
