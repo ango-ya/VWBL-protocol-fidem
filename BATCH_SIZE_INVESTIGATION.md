@@ -5,7 +5,7 @@
 
 ## 調査環境
 - Hardhat ローカルネットワーク
-- Block Gas Limit: 100,000,000 (100M) ※テスト用に増加
+- Block Gas Limit: 30,000,000 (30M) - Polygon mainnet と同等
 - Solidity バージョン: 0.8.17
 - Optimizer: 有効 (runs: 200)
 
@@ -160,7 +160,7 @@ it("should fail with batch size of 49", async () => {
 })
 ```
 
-### Hardhat設定（テスト用）
+### Hardhat設定
 
 ```typescript
 // hardhat.config.ts
@@ -168,7 +168,7 @@ networks: {
     hardhat: {
         chainId: 1337,
         allowUnlimitedContractSize: true,
-        blockGasLimit: 100000000, // 100M gas for testing large batches
+        blockGasLimit: 30000000, // 30M gas - matches Polygon mainnet limit for realistic testing
     },
 }
 ```
