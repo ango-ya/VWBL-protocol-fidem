@@ -67,6 +67,13 @@ contract VWBLFidemToken is
         uint256 transferTimestamp;
     }
 
+    struct RevenueShareHistory {
+        address[] recipients;
+        uint256[] shares;
+        uint256 timestamp;
+        address updatedBy;
+    }
+
     // ============ VWBLFidemToken Specific Storage ============
 
     mapping(uint256 => address) public tokenOwners;
@@ -76,6 +83,7 @@ contract VWBLFidemToken is
     mapping(uint256 => uint256[]) public tokenIdToReceipts;
     mapping(address => uint256[]) public customerToReceipts;
     mapping(uint256 => mapping(address => TransferStatus)) public transferStatus;
+    mapping(uint256 => RevenueShareHistory[]) public revenueShareHistory;
 
     // Flag for allowing transfers from safeTransferByOwner
     bool private _executingOwnerTransfer;
@@ -85,10 +93,10 @@ contract VWBLFidemToken is
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
-     * We have 8 VWBLFidemToken-specific variables, so reserve 42 slots to make 50 total.
+     * We have 9 VWBLFidemToken-specific variables, so reserve 41 slots to make 50 total.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[42] private __gap;
+    uint256[41] private __gap;
 
     // ============ Events ============
 
@@ -110,6 +118,14 @@ contract VWBLFidemToken is
     );
 
     event RevenueShareUpdated(uint256 indexed tokenId, address[] recipients, uint256[] shares);
+
+    event RevenueShareHistorySaved(
+        uint256 indexed tokenId,
+        address[] recipients,
+        uint256[] shares,
+        address indexed updatedBy,
+        uint256 timestamp
+    );
 
     event TransferByOwner(
         address indexed from,
@@ -332,6 +348,28 @@ contract VWBLFidemToken is
         }
         require(totalShares == BASIS_POINTS_TOTAL, "Shares must equal BASIS_POINTS_TOTAL");
 
+        // Save current configuration to history before updating (if already configured)
+        RevenueShareConfig memory currentConfig = tokenIdToRevenueShare[tokenId];
+        if (currentConfig.isConfigured) {
+            revenueShareHistory[tokenId].push(
+                RevenueShareHistory({
+                    recipients: currentConfig.recipients,
+                    shares: currentConfig.shares,
+                    timestamp: block.timestamp,
+                    updatedBy: msg.sender
+                })
+            );
+
+            emit RevenueShareHistorySaved(
+                tokenId,
+                currentConfig.recipients,
+                currentConfig.shares,
+                msg.sender,
+                block.timestamp
+            );
+        }
+
+        // Update to new configuration
         tokenIdToRevenueShare[tokenId] = RevenueShareConfig({
             recipients: _recipients,
             shares: _shares,
@@ -352,6 +390,24 @@ contract VWBLFidemToken is
     {
         RevenueShareConfig memory config = tokenIdToRevenueShare[tokenId];
         return (config.recipients, config.shares);
+    }
+
+    /**
+     * @notice Get revenue share history for a token
+     */
+    function getRevenueShareHistory(uint256 tokenId)
+        public
+        view
+        returns (RevenueShareHistory[] memory)
+    {
+        return revenueShareHistory[tokenId];
+    }
+
+    /**
+     * @notice Get revenue share history count for a token
+     */
+    function getRevenueShareHistoryCount(uint256 tokenId) public view returns (uint256) {
+        return revenueShareHistory[tokenId].length;
     }
 
     // ============ Transfer Restrictions (SBT-like) ============

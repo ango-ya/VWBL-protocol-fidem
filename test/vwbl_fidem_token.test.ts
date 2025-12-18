@@ -455,6 +455,103 @@ describe("VWBLFidemToken", () => {
             })
         })
 
+        context("Revenue share history tracking", () => {
+            it("should have empty history initially", async () => {
+                const historyCount = await vwblFidemToken.getRevenueShareHistoryCount(tokenId)
+                expect(historyCount).to.equal(0)
+
+                const history = await vwblFidemToken.getRevenueShareHistory(tokenId)
+                expect(history.length).to.equal(0)
+            })
+
+            it("should save history when Token Owner updates revenue share", async () => {
+                const newRecipients = [recipient1.address, recipient2.address]
+                const newShares = [7000, 3000]
+
+                // Update revenue share
+                await vwblFidemToken.connect(tokenOwner).updateRevenueShare(tokenId, newRecipients, newShares)
+
+                // Verify history was saved
+                const historyCount = await vwblFidemToken.getRevenueShareHistoryCount(tokenId)
+                expect(historyCount).to.equal(1)
+
+                const history = await vwblFidemToken.getRevenueShareHistory(tokenId)
+                expect(history.length).to.equal(1)
+
+                // Verify history contains original configuration [6000, 4000]
+                expect(history[0].recipients).to.deep.equal([recipient1.address, recipient2.address])
+                expect(history[0].shares.map((s: any) => s.toNumber())).to.deep.equal([6000, 4000])
+                expect(history[0].updatedBy).to.equal(tokenOwner.address)
+            })
+
+            it("should save multiple history entries on multiple updates", async () => {
+                // First update: [6000, 4000] → [7000, 3000]
+                await vwblFidemToken
+                    .connect(tokenOwner)
+                    .updateRevenueShare(tokenId, [recipient1.address, recipient2.address], [7000, 3000])
+
+                // Second update: [7000, 3000] → [5000, 5000]
+                await vwblFidemToken
+                    .connect(tokenOwner)
+                    .updateRevenueShare(tokenId, [recipient1.address, recipient2.address], [5000, 5000])
+
+                // Third update: [5000, 5000] → [8000, 2000]
+                await vwblFidemToken
+                    .connect(tokenOwner)
+                    .updateRevenueShare(tokenId, [recipient1.address, recipient2.address], [8000, 2000])
+
+                // Verify 3 history entries
+                const historyCount = await vwblFidemToken.getRevenueShareHistoryCount(tokenId)
+                expect(historyCount).to.equal(3)
+
+                const history = await vwblFidemToken.getRevenueShareHistory(tokenId)
+
+                // First history entry: original [6000, 4000]
+                expect(history[0].shares.map((s: any) => s.toNumber())).to.deep.equal([6000, 4000])
+
+                // Second history entry: [7000, 3000]
+                expect(history[1].shares.map((s: any) => s.toNumber())).to.deep.equal([7000, 3000])
+
+                // Third history entry: [5000, 5000]
+                expect(history[2].shares.map((s: any) => s.toNumber())).to.deep.equal([5000, 5000])
+
+                // Current config should be [8000, 2000]
+                const currentConfig = await vwblFidemToken.getRevenueShareConfig(tokenId)
+                expect(currentConfig[1].map((s: any) => s.toNumber())).to.deep.equal([8000, 2000])
+            })
+
+            it("should record correct updatedBy address in history", async () => {
+                // Token owner updates
+                await vwblFidemToken
+                    .connect(tokenOwner)
+                    .updateRevenueShare(tokenId, [recipient1.address, recipient2.address], [7000, 3000])
+
+                // Contract owner (admin) updates
+                await vwblFidemToken
+                    .connect(owner)
+                    .updateRevenueShareByAdmin(tokenId, [recipient1.address, recipient2.address], [5000, 5000])
+
+                const history = await vwblFidemToken.getRevenueShareHistory(tokenId)
+
+                // First update was by tokenOwner
+                expect(history[0].updatedBy).to.equal(tokenOwner.address)
+
+                // Second update was by owner (admin)
+                expect(history[1].updatedBy).to.equal(owner.address)
+            })
+
+            it("should emit RevenueShareHistorySaved event", async () => {
+                const newRecipients = [recipient1.address, recipient2.address]
+                const newShares = [7000, 3000]
+
+                await expect(
+                    vwblFidemToken.connect(tokenOwner).updateRevenueShare(tokenId, newRecipients, newShares)
+                )
+                    .to.emit(vwblFidemToken, "RevenueShareHistorySaved")
+                    .and.to.emit(vwblFidemToken, "RevenueShareUpdated")
+            })
+        })
+
         context("When validation fails on update", () => {
             it("should revert if shares do not sum to 10000", async () => {
                 const newRecipients = [recipient1.address, recipient2.address]
