@@ -247,7 +247,7 @@ describe("VWBLFidemToken", () => {
             it("should mint token to customer", async () => {
                 await vwblFidemToken
                     .connect(tokenOwner)
-                    .mint(tokenId, customer1.address, utils.parseEther("100"), "FIDEM-001", "STRIPE-123", {
+                    .mint(tokenId, customer1.address, utils.parseEther("100"),  "STRIPE-123", {
                         value: fee,
                     })
 
@@ -260,7 +260,7 @@ describe("VWBLFidemToken", () => {
 
                 const tx = await vwblFidemToken
                     .connect(tokenOwner)
-                    .mint(tokenId, customer1.address, saleAmount, "FIDEM-001", "STRIPE-123", { value: fee })
+                    .mint(tokenId, customer1.address, saleAmount,  "STRIPE-123", { value: fee })
 
                 const receipt = await tx.wait()
                 const receiptId = receipt.events?.find((e: any) => e.event === "TokenMinted")?.args?.receiptId
@@ -269,7 +269,6 @@ describe("VWBLFidemToken", () => {
                 expect(storedReceipt.tokenId).to.equal(tokenId)
                 expect(storedReceipt.customer).to.equal(customer1.address)
                 expect(storedReceipt.saleAmount).to.equal(saleAmount)
-                expect(storedReceipt.fidemReceiptId).to.equal("FIDEM-001")
                 expect(storedReceipt.paymentInvoiceId).to.equal("STRIPE-123")
             })
 
@@ -279,7 +278,7 @@ describe("VWBLFidemToken", () => {
                 // First purchase with original share configuration [6000, 4000]
                 const tx1 = await vwblFidemToken
                     .connect(tokenOwner)
-                    .mint(tokenId, customer1.address, saleAmount, "FIDEM-001", "STRIPE-123", { value: fee })
+                    .mint(tokenId, customer1.address, saleAmount,  "STRIPE-123", { value: fee })
 
                 const receipt1 = await tx1.wait()
                 const receiptId1 = receipt1.events?.find((e: any) => e.event === "TokenMinted")?.args?.receiptId
@@ -297,7 +296,7 @@ describe("VWBLFidemToken", () => {
                 // Second purchase with new share configuration [5000, 5000]
                 const tx2 = await vwblFidemToken
                     .connect(tokenOwner)
-                    .mint(tokenId, customer2.address, saleAmount, "FIDEM-002", "STRIPE-456", { value: fee })
+                    .mint(tokenId, customer2.address, saleAmount,  "STRIPE-456", { value: fee })
 
                 const receipt2 = await tx2.wait()
                 const receiptId2 = receipt2.events?.find((e: any) => e.event === "TokenMinted")?.args?.receiptId
@@ -319,7 +318,7 @@ describe("VWBLFidemToken", () => {
                 await expect(
                     vwblFidemToken
                         .connect(tokenOwner)
-                        .mint(tokenId, customer1.address, saleAmount, "FIDEM-001", "STRIPE-123", { value: fee })
+                        .mint(tokenId, customer1.address, saleAmount,  "STRIPE-123", { value: fee })
                 )
                     .to.emit(vwblFidemToken, "TokenMinted")
                     .and.to.emit(vwblFidemToken, "ReceiptCreated")
@@ -331,7 +330,7 @@ describe("VWBLFidemToken", () => {
                 await expect(
                     vwblFidemToken
                         .connect(customer1)
-                        .mint(tokenId, customer2.address, utils.parseEther("100"), "FIDEM-001", "STRIPE-123", {
+                        .mint(tokenId, customer2.address, utils.parseEther("100"),  "STRIPE-123", {
                             value: fee,
                         })
                 ).to.be.revertedWith("Only Token Owner can mint")
@@ -345,7 +344,7 @@ describe("VWBLFidemToken", () => {
                 await expect(
                     vwblFidemToken
                         .connect(tokenOwner)
-                        .mint(tokenId, customer1.address, utils.parseEther("100"), "FIDEM-001", "STRIPE-123", {
+                        .mint(tokenId, customer1.address, utils.parseEther("100"),  "STRIPE-123", {
                             value: insufficientFee,
                         })
                 ).to.be.revertedWith("Insufficient VWBL fee")
@@ -357,7 +356,7 @@ describe("VWBLFidemToken", () => {
                 await expect(
                     vwblFidemToken
                         .connect(tokenOwner)
-                        .mint(tokenId, ethers.constants.AddressZero, utils.parseEther("100"), "FIDEM-001", "STRIPE-123", {
+                        .mint(tokenId, ethers.constants.AddressZero, utils.parseEther("100"),  "STRIPE-123", {
                             value: fee,
                         })
                 ).to.be.revertedWith("Invalid customer address")
@@ -371,7 +370,7 @@ describe("VWBLFidemToken", () => {
 
                 const tx = await vwblFidemToken
                     .connect(tokenOwner)
-                    .mint(tokenId, customer1.address, utils.parseEther("100"), "FIDEM-001", "STRIPE-123", {
+                    .mint(tokenId, customer1.address, utils.parseEther("100"),  "STRIPE-123", {
                         value: excessFee,
                     })
                 const receipt = await tx.wait()
@@ -586,7 +585,7 @@ describe("VWBLFidemToken", () => {
             // Mint to customer
             await vwblFidemToken
                 .connect(tokenOwner)
-                .mint(tokenId, customer1.address, utils.parseEther("100"), "FIDEM-001", "STRIPE-123", { value: fee })
+                .mint(tokenId, customer1.address, utils.parseEther("100"),  "STRIPE-123", { value: fee })
         })
 
         context("When attempting normal transfer", () => {
@@ -703,14 +702,14 @@ describe("VWBLFidemToken", () => {
             // Mint to customer1
             const tx1 = await vwblFidemToken
                 .connect(tokenOwner)
-                .mint(tokenId, customer1.address, utils.parseEther("100"), "FIDEM-001", "STRIPE-123", { value: fee })
+                .mint(tokenId, customer1.address, utils.parseEther("100"),  "STRIPE-123", { value: fee })
             const receipt1 = await tx1.wait()
             receiptId1 = receipt1.events?.find((e: any) => e.event === "TokenMinted")?.args?.receiptId.toNumber()
 
             // Mint to customer2
             const tx2 = await vwblFidemToken
                 .connect(tokenOwner)
-                .mint(tokenId, customer2.address, utils.parseEther("50"), "FIDEM-002", "STRIPE-124", { value: fee })
+                .mint(tokenId, customer2.address, utils.parseEther("50"),  "STRIPE-124", { value: fee })
             const receipt2 = await tx2.wait()
             receiptId2 = receipt2.events?.find((e: any) => e.event === "TokenMinted")?.args?.receiptId.toNumber()
         })
@@ -720,7 +719,6 @@ describe("VWBLFidemToken", () => {
 
             expect(receipt.receiptId).to.equal(receiptId1)
             expect(receipt.customer).to.equal(customer1.address)
-            expect(receipt.fidemReceiptId).to.equal("FIDEM-001")
         })
 
         it("should get all receipts for a token", async () => {
