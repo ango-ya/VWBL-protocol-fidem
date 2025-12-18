@@ -2,13 +2,8 @@ import "hardhat-contract-sizer"
 import * as dotenv from "dotenv"
 import { HardhatUserConfig } from "hardhat/config"
 import "@nomicfoundation/hardhat-toolbox"
-import "@nomiclabs/hardhat-etherscan"
-import "@nomiclabs/hardhat-waffle"
 import "@nomiclabs/hardhat-web3"
 import "@openzeppelin/hardhat-upgrades"
-import "@typechain/hardhat"
-import "hardhat-gas-reporter"
-import "solidity-coverage"
 
 dotenv.config()
 

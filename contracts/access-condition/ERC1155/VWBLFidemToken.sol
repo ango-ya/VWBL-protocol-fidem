@@ -235,10 +235,21 @@ contract VWBLFidemToken is
             isConfigured: true
         });
 
-        // Integrate with VWBL gateway
+        // Fee validation
+        uint256 vwblFee = getFee();
+        require(msg.value >= vwblFee, "Insufficient VWBL fee");
+
+        // Integrate with VWBL gateway (only the required fee amount)
         IAccessControlCheckerByERC1155(accessCheckerContract).grantAccessControlAndRegisterERC1155{
-            value: msg.value
+            value: vwblFee
         }(_documentId, address(this), tokenId);
+
+        // Refund excess ETH if any
+        if (msg.value > vwblFee) {
+            uint256 refund = msg.value - vwblFee;
+            (bool success, ) = payable(msg.sender).call{value: refund}("");
+            require(success, "Refund failed");
+        }
 
         emit TokenCreated(tokenId, msg.sender, _documentId, _recipients, _shares);
 

@@ -1,16 +1,16 @@
-import { Contract, utils } from "ethers"
+import { Contract } from "ethers"
 import { ethers, upgrades } from "hardhat"
 import { assert, expect } from "chai"
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
+import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers"
 
 describe("VWBLFidemToken", () => {
-    let accounts: SignerWithAddress[]
-    let owner: SignerWithAddress
-    let tokenOwner: SignerWithAddress
-    let customer1: SignerWithAddress
-    let customer2: SignerWithAddress
-    let recipient1: SignerWithAddress
-    let recipient2: SignerWithAddress
+    let accounts: HardhatEthersSigner[]
+    let owner: HardhatEthersSigner
+    let tokenOwner: HardhatEthersSigner
+    let customer1: HardhatEthersSigner
+    let customer2: HardhatEthersSigner
+    let recipient1: HardhatEthersSigner
+    let recipient2: HardhatEthersSigner
 
     let vwblGateway: Contract
     let gatewayProxy: Contract
@@ -19,7 +19,7 @@ describe("VWBLFidemToken", () => {
 
     const TEST_DOCUMENT_ID1 = "0x7c00000000000000000000000000000000000000000000000000000000000000"
     const TEST_DOCUMENT_ID2 = "0x3c00000000000000000000000000000000000000000000000000000000000000"
-    const fee = utils.parseEther("1.0")
+    const fee = ethers.parseEther("1.0")
     const baseURI = "https://example.com/metadata/"
 
     beforeEach(async () => {
@@ -37,11 +37,11 @@ describe("VWBLFidemToken", () => {
 
         // Deploy Gateway Proxy
         const GatewayProxy = await ethers.getContractFactory("GatewayProxy")
-        gatewayProxy = await GatewayProxy.deploy(vwblGateway.address)
+        gatewayProxy = await GatewayProxy.deploy(await vwblGateway.getAddress())
 
         // Deploy Access Control Checker
         const AccessControlCheckerByERC1155 = await ethers.getContractFactory("AccessControlCheckerByERC1155")
-        accessControlCheckerByERC1155 = await AccessControlCheckerByERC1155.deploy(gatewayProxy.address)
+        accessControlCheckerByERC1155 = await AccessControlCheckerByERC1155.deploy(await gatewayProxy.getAddress())
     })
 
     describe("Deployment & Initialization", () => {
@@ -50,7 +50,7 @@ describe("VWBLFidemToken", () => {
 
             vwblFidemToken = await upgrades.deployProxy(
                 VWBLFidemToken,
-                [baseURI, gatewayProxy.address, accessControlCheckerByERC1155.address, "Hello VWBL Fidem"],
+                [baseURI, await gatewayProxy.getAddress(), await accessControlCheckerByERC1155.getAddress(), "Hello VWBL Fidem"],
                 {
                     initializer: "initialize",
                     kind: "uups",
@@ -68,9 +68,7 @@ describe("VWBLFidemToken", () => {
 
             await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
 
-            await vwblFidemToken.deployed()
-
-            expect(vwblFidemToken.address).to.be.properAddress
+            expect(await vwblFidemToken.getAddress()).to.be.properAddress
         })
 
         it("should initialize with correct parameters", async () => {
@@ -78,7 +76,7 @@ describe("VWBLFidemToken", () => {
 
             vwblFidemToken = await upgrades.deployProxy(
                 VWBLFidemToken,
-                [baseURI, gatewayProxy.address, accessControlCheckerByERC1155.address, "Hello VWBL Fidem"],
+                [baseURI, await gatewayProxy.getAddress(), await accessControlCheckerByERC1155.getAddress(), "Hello VWBL Fidem"],
                 {
                     initializer: "initialize",
                     kind: "uups",
@@ -97,8 +95,8 @@ describe("VWBLFidemToken", () => {
             await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
 
             expect(await vwblFidemToken.baseURI()).to.equal(baseURI)
-            expect(await vwblFidemToken.gatewayProxy()).to.equal(gatewayProxy.address)
-            expect(await vwblFidemToken.accessCheckerContract()).to.equal(accessControlCheckerByERC1155.address)
+            expect(await vwblFidemToken.gatewayProxy()).to.equal(await gatewayProxy.getAddress())
+            expect(await vwblFidemToken.accessCheckerContract()).to.equal(await accessControlCheckerByERC1155.getAddress())
             expect(await vwblFidemToken.getSignMessage()).to.equal("Hello VWBL Fidem")
             expect(await vwblFidemToken.counter()).to.equal(0)
             expect(await vwblFidemToken.receiptCounter()).to.equal(0)
@@ -109,7 +107,7 @@ describe("VWBLFidemToken", () => {
 
             vwblFidemToken = await upgrades.deployProxy(
                 VWBLFidemToken,
-                [baseURI, gatewayProxy.address, accessControlCheckerByERC1155.address, "Hello VWBL Fidem"],
+                [baseURI, await gatewayProxy.getAddress(), await accessControlCheckerByERC1155.getAddress(), "Hello VWBL Fidem"],
                 {
                     initializer: "initialize",
                     kind: "uups",
@@ -136,7 +134,7 @@ describe("VWBLFidemToken", () => {
             const VWBLFidemToken = await ethers.getContractFactory("VWBLFidemToken")
             vwblFidemToken = await upgrades.deployProxy(
                 VWBLFidemToken,
-                [baseURI, gatewayProxy.address, accessControlCheckerByERC1155.address, "Hello VWBL Fidem"],
+                [baseURI, await gatewayProxy.getAddress(), await accessControlCheckerByERC1155.getAddress(), "Hello VWBL Fidem"],
                 { initializer: "initialize", kind: "uups" }
             )
 
@@ -157,7 +155,7 @@ describe("VWBLFidemToken", () => {
                     .create("https://vwbl.network/key", TEST_DOCUMENT_ID1, recipients, shares, { value: fee })
 
                 const receipt = await tx.wait()
-                const tokenId = receipt.events?.find((e: any) => e.event === "TokenCreated")?.args?.tokenId
+                const tokenId = (() => { const log = receipt.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenCreated"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.tokenId; })()
 
                 expect(tokenId).to.equal(1)
                 expect(await vwblFidemToken.tokenOwners(tokenId)).to.equal(tokenOwner.address)
@@ -172,7 +170,7 @@ describe("VWBLFidemToken", () => {
                     .create("https://vwbl.network/key", TEST_DOCUMENT_ID1, recipients, shares, { value: fee })
 
                 const receipt = await tx.wait()
-                const tokenId = receipt.events?.find((e: any) => e.event === "TokenCreated")?.args?.tokenId
+                const tokenId = (() => { const log = receipt.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenCreated"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.tokenId; })()
 
                 // Verify token owner does NOT hold any tokens
                 const balance = await vwblFidemToken.balanceOf(tokenOwner.address, tokenId)
@@ -197,7 +195,7 @@ describe("VWBLFidemToken", () => {
 
                 const config = await vwblFidemToken.getRevenueShareConfig(1)
                 expect(config[0]).to.deep.equal(recipients)
-                expect(config[1].map((s: any) => s.toNumber())).to.deep.equal(shares)
+                expect(config[1].map((s: any) => s)).to.deep.equal(shares)
             })
 
             it("should emit TokenCreated event with correct data", async () => {
@@ -238,7 +236,7 @@ describe("VWBLFidemToken", () => {
             })
 
             it("should revert if recipient is zero address", async () => {
-                const recipients = [ethers.constants.AddressZero, recipient2.address]
+                const recipients = [ethers.ZeroAddress, recipient2.address]
                 const shares = [6000, 4000]
 
                 await expect(
@@ -268,7 +266,7 @@ describe("VWBLFidemToken", () => {
             const VWBLFidemToken = await ethers.getContractFactory("VWBLFidemToken")
             vwblFidemToken = await upgrades.deployProxy(
                 VWBLFidemToken,
-                [baseURI, gatewayProxy.address, accessControlCheckerByERC1155.address, "Hello VWBL Fidem"],
+                [baseURI, await gatewayProxy.getAddress(), await accessControlCheckerByERC1155.getAddress(), "Hello VWBL Fidem"],
                 { initializer: "initialize", kind: "uups" }
             )
 
@@ -285,14 +283,14 @@ describe("VWBLFidemToken", () => {
                 .connect(tokenOwner)
                 .create("https://vwbl.network/key", TEST_DOCUMENT_ID1, recipients, shares, { value: fee })
             const receipt = await tx.wait()
-            tokenId = receipt.events?.find((e: any) => e.event === "TokenCreated")?.args?.tokenId.toNumber()
+            tokenId = (() => { const log = receipt.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenCreated"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.tokenId; })()
         })
 
         context("When Token Owner mints to a customer", () => {
             it("should mint token to customer", async () => {
                 await vwblFidemToken
                     .connect(tokenOwner)
-                    .mint(tokenId, customer1.address, utils.parseEther("100"),  "STRIPE-123", {
+                    .mint(tokenId, customer1.address, ethers.parseEther("100"),  "STRIPE-123", {
                         value: fee,
                     })
 
@@ -301,14 +299,14 @@ describe("VWBLFidemToken", () => {
             })
 
             it("should create a receipt with correct data", async () => {
-                const saleAmount = utils.parseEther("100")
+                const saleAmount = ethers.parseEther("100")
 
                 const tx = await vwblFidemToken
                     .connect(tokenOwner)
                     .mint(tokenId, customer1.address, saleAmount,  "STRIPE-123", { value: fee })
 
                 const receipt = await tx.wait()
-                const receiptId = receipt.events?.find((e: any) => e.event === "TokenMinted")?.args?.receiptId
+                const receiptId = (() => { const log = receipt.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.receiptId; })()
 
                 const storedReceipt = await vwblFidemToken.getReceipt(receiptId)
                 expect(storedReceipt.tokenId).to.equal(tokenId)
@@ -318,7 +316,7 @@ describe("VWBLFidemToken", () => {
             })
 
             it("should store immutable snapshot of revenue share at purchase time", async () => {
-                const saleAmount = utils.parseEther("100")
+                const saleAmount = ethers.parseEther("100")
 
                 // First purchase with original share configuration [6000, 4000]
                 const tx1 = await vwblFidemToken
@@ -326,12 +324,12 @@ describe("VWBLFidemToken", () => {
                     .mint(tokenId, customer1.address, saleAmount,  "STRIPE-123", { value: fee })
 
                 const receipt1 = await tx1.wait()
-                const receiptId1 = receipt1.events?.find((e: any) => e.event === "TokenMinted")?.args?.receiptId
+                const receiptId1 = (() => { const log = receipt1.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.receiptId; })()
 
                 // Verify first receipt has original shares
                 const storedReceipt1 = await vwblFidemToken.getReceipt(receiptId1)
                 expect(storedReceipt1.recipients).to.deep.equal([recipient1.address, recipient2.address])
-                expect(storedReceipt1.shares.map((s: any) => s.toNumber())).to.deep.equal([6000, 4000])
+                expect(storedReceipt1.shares.map((s: any) => s)).to.deep.equal([6000, 4000])
 
                 // Update revenue share configuration to [5000, 5000]
                 const newRecipients = [recipient1.address, recipient2.address]
@@ -344,21 +342,21 @@ describe("VWBLFidemToken", () => {
                     .mint(tokenId, customer2.address, saleAmount,  "STRIPE-456", { value: fee })
 
                 const receipt2 = await tx2.wait()
-                const receiptId2 = receipt2.events?.find((e: any) => e.event === "TokenMinted")?.args?.receiptId
+                const receiptId2 = (() => { const log = receipt2.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.receiptId; })()
 
                 // Verify second receipt has new shares
                 const storedReceipt2 = await vwblFidemToken.getReceipt(receiptId2)
                 expect(storedReceipt2.recipients).to.deep.equal([recipient1.address, recipient2.address])
-                expect(storedReceipt2.shares.map((s: any) => s.toNumber())).to.deep.equal([5000, 5000])
+                expect(storedReceipt2.shares.map((s: any) => s)).to.deep.equal([5000, 5000])
 
                 // CRITICAL: Verify first receipt STILL has original shares (immutable)
                 const storedReceipt1Again = await vwblFidemToken.getReceipt(receiptId1)
                 expect(storedReceipt1Again.recipients).to.deep.equal([recipient1.address, recipient2.address])
-                expect(storedReceipt1Again.shares.map((s: any) => s.toNumber())).to.deep.equal([6000, 4000])
+                expect(storedReceipt1Again.shares.map((s: any) => s)).to.deep.equal([6000, 4000])
             })
 
             it("should emit TokenMinted and ReceiptCreated events", async () => {
-                const saleAmount = utils.parseEther("100")
+                const saleAmount = ethers.parseEther("100")
 
                 await expect(
                     vwblFidemToken
@@ -375,7 +373,7 @@ describe("VWBLFidemToken", () => {
                 await expect(
                     vwblFidemToken
                         .connect(customer1)
-                        .mint(tokenId, customer2.address, utils.parseEther("100"),  "STRIPE-123", {
+                        .mint(tokenId, customer2.address, ethers.parseEther("100"),  "STRIPE-123", {
                             value: fee,
                         })
                 ).to.be.reverted // AccessControl will revert
@@ -384,12 +382,12 @@ describe("VWBLFidemToken", () => {
 
         context("When insufficient fee is provided", () => {
             it("should revert", async () => {
-                const insufficientFee = utils.parseEther("0.5")
+                const insufficientFee = ethers.parseEther("0.5")
 
                 await expect(
                     vwblFidemToken
                         .connect(tokenOwner)
-                        .mint(tokenId, customer1.address, utils.parseEther("100"),  "STRIPE-123", {
+                        .mint(tokenId, customer1.address, ethers.parseEther("100"),  "STRIPE-123", {
                             value: insufficientFee,
                         })
                 ).to.be.revertedWith("Insufficient VWBL fee")
@@ -401,7 +399,7 @@ describe("VWBLFidemToken", () => {
                 await expect(
                     vwblFidemToken
                         .connect(tokenOwner)
-                        .mint(tokenId, ethers.constants.AddressZero, utils.parseEther("100"),  "STRIPE-123", {
+                        .mint(tokenId, ethers.ZeroAddress, ethers.parseEther("100"),  "STRIPE-123", {
                             value: fee,
                         })
                 ).to.be.revertedWith("Invalid customer address")
@@ -410,23 +408,23 @@ describe("VWBLFidemToken", () => {
 
         context("When excess ETH is provided", () => {
             it("should refund excess ETH to msg.sender", async () => {
-                const excessFee = utils.parseEther("2.0") // 2 ETH when only 1 ETH is required
-                const balanceBefore = await tokenOwner.getBalance()
+                const excessFee = ethers.parseEther("2.0") // 2 ETH when only 1 ETH is required
+                const balanceBefore = await ethers.provider.getBalance(tokenOwner.address)
 
                 const tx = await vwblFidemToken
                     .connect(tokenOwner)
-                    .mint(tokenId, customer1.address, utils.parseEther("100"),  "STRIPE-123", {
+                    .mint(tokenId, customer1.address, ethers.parseEther("100"),  "STRIPE-123", {
                         value: excessFee,
                     })
                 const receipt = await tx.wait()
 
-                const balanceAfter = await tokenOwner.getBalance()
-                const gasUsed = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+                const balanceAfter = await ethers.provider.getBalance(tokenOwner.address)
+                const gasCost = receipt.gasUsed * receipt.gasPrice
 
                 // Balance should be: before - fee - gas + refund
                 // Or: before - fee - gas, since refund = excessFee - fee
                 // So: before - excessFee - gas + (excessFee - fee) = before - fee - gas
-                const expectedBalance = balanceBefore.sub(fee).sub(gasUsed)
+                const expectedBalance = balanceBefore - fee - gasCost
 
                 expect(balanceAfter).to.equal(expectedBalance)
             })
@@ -440,7 +438,7 @@ describe("VWBLFidemToken", () => {
             const VWBLFidemToken = await ethers.getContractFactory("VWBLFidemToken")
             vwblFidemToken = await upgrades.deployProxy(
                 VWBLFidemToken,
-                [baseURI, gatewayProxy.address, accessControlCheckerByERC1155.address, "Hello VWBL Fidem"],
+                [baseURI, await gatewayProxy.getAddress(), await accessControlCheckerByERC1155.getAddress(), "Hello VWBL Fidem"],
                 { initializer: "initialize", kind: "uups" }
             )
 
@@ -456,7 +454,7 @@ describe("VWBLFidemToken", () => {
                 .connect(tokenOwner)
                 .create("https://vwbl.network/key", TEST_DOCUMENT_ID1, recipients, shares, { value: fee })
             const receipt = await tx.wait()
-            tokenId = receipt.events?.find((e: any) => e.event === "TokenCreated")?.args?.tokenId.toNumber()
+            tokenId = (() => { const log = receipt.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenCreated"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.tokenId; })()
         })
 
         context("When Token Owner updates revenue share", () => {
@@ -467,7 +465,7 @@ describe("VWBLFidemToken", () => {
                 await vwblFidemToken.connect(tokenOwner).updateRevenueShare(tokenId, newRecipients, newShares)
 
                 const config = await vwblFidemToken.getRevenueShareConfig(tokenId)
-                expect(config[1].map((s: any) => s.toNumber())).to.deep.equal(newShares)
+                expect(config[1].map((s: any) => s)).to.deep.equal(newShares)
             })
 
             it("should emit RevenueShareUpdated event", async () => {
@@ -501,7 +499,7 @@ describe("VWBLFidemToken", () => {
                 await vwblFidemToken.connect(owner).updateRevenueShareByAdmin(tokenId, newRecipients, newShares)
 
                 const config = await vwblFidemToken.getRevenueShareConfig(tokenId)
-                expect(config[1].map((s: any) => s.toNumber())).to.deep.equal(newShares)
+                expect(config[1].map((s: any) => s)).to.deep.equal(newShares)
             })
         })
 
@@ -530,7 +528,7 @@ describe("VWBLFidemToken", () => {
 
                 // Verify history contains original configuration [6000, 4000]
                 expect(history[0].recipients).to.deep.equal([recipient1.address, recipient2.address])
-                expect(history[0].shares.map((s: any) => s.toNumber())).to.deep.equal([6000, 4000])
+                expect(history[0].shares.map((s: any) => s)).to.deep.equal([6000, 4000])
                 expect(history[0].updatedBy).to.equal(tokenOwner.address)
             })
 
@@ -557,17 +555,17 @@ describe("VWBLFidemToken", () => {
                 const history = await vwblFidemToken.getRevenueShareHistory(tokenId)
 
                 // First history entry: original [6000, 4000]
-                expect(history[0].shares.map((s: any) => s.toNumber())).to.deep.equal([6000, 4000])
+                expect(history[0].shares.map((s: any) => s)).to.deep.equal([6000, 4000])
 
                 // Second history entry: [7000, 3000]
-                expect(history[1].shares.map((s: any) => s.toNumber())).to.deep.equal([7000, 3000])
+                expect(history[1].shares.map((s: any) => s)).to.deep.equal([7000, 3000])
 
                 // Third history entry: [5000, 5000]
-                expect(history[2].shares.map((s: any) => s.toNumber())).to.deep.equal([5000, 5000])
+                expect(history[2].shares.map((s: any) => s)).to.deep.equal([5000, 5000])
 
                 // Current config should be [8000, 2000]
                 const currentConfig = await vwblFidemToken.getRevenueShareConfig(tokenId)
-                expect(currentConfig[1].map((s: any) => s.toNumber())).to.deep.equal([8000, 2000])
+                expect(currentConfig[1].map((s: any) => s)).to.deep.equal([8000, 2000])
             })
 
             it("should record correct updatedBy address in history", async () => {
@@ -621,7 +619,7 @@ describe("VWBLFidemToken", () => {
             const VWBLFidemToken = await ethers.getContractFactory("VWBLFidemToken")
             vwblFidemToken = await upgrades.deployProxy(
                 VWBLFidemToken,
-                [baseURI, gatewayProxy.address, accessControlCheckerByERC1155.address, "Hello VWBL Fidem"],
+                [baseURI, await gatewayProxy.getAddress(), await accessControlCheckerByERC1155.getAddress(), "Hello VWBL Fidem"],
                 { initializer: "initialize", kind: "uups" }
             )
 
@@ -642,12 +640,12 @@ describe("VWBLFidemToken", () => {
                 .connect(tokenOwner)
                 .create("https://vwbl.network/key", TEST_DOCUMENT_ID1, recipients, shares, { value: fee })
             const receipt = await tx.wait()
-            tokenId = receipt.events?.find((e: any) => e.event === "TokenCreated")?.args?.tokenId.toNumber()
+            tokenId = (() => { const log = receipt.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenCreated"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.tokenId; })()
 
             // Mint to customer
             await vwblFidemToken
                 .connect(tokenOwner)
-                .mint(tokenId, customer1.address, utils.parseEther("100"),  "STRIPE-123", { value: fee })
+                .mint(tokenId, customer1.address, ethers.parseEther("100"),  "STRIPE-123", { value: fee })
         })
 
         context("When attempting normal transfer", () => {
@@ -749,7 +747,7 @@ describe("VWBLFidemToken", () => {
             const VWBLFidemToken = await ethers.getContractFactory("VWBLFidemToken")
             vwblFidemToken = await upgrades.deployProxy(
                 VWBLFidemToken,
-                [baseURI, gatewayProxy.address, accessControlCheckerByERC1155.address, "Hello VWBL Fidem"],
+                [baseURI, await gatewayProxy.getAddress(), await accessControlCheckerByERC1155.getAddress(), "Hello VWBL Fidem"],
                 { initializer: "initialize", kind: "uups" }
             )
 
@@ -770,21 +768,21 @@ describe("VWBLFidemToken", () => {
                 .connect(tokenOwner)
                 .create("https://vwbl.network/key", TEST_DOCUMENT_ID1, recipients, shares, { value: fee })
             const receipt = await tx.wait()
-            tokenId = receipt.events?.find((e: any) => e.event === "TokenCreated")?.args?.tokenId.toNumber()
+            tokenId = (() => { const log = receipt.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenCreated"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.tokenId; })()
 
             // Mint to customer1
             const tx1 = await vwblFidemToken
                 .connect(tokenOwner)
-                .mint(tokenId, customer1.address, utils.parseEther("100"),  "STRIPE-123", { value: fee })
+                .mint(tokenId, customer1.address, ethers.parseEther("100"),  "STRIPE-123", { value: fee })
             const receipt1 = await tx1.wait()
-            receiptId1 = receipt1.events?.find((e: any) => e.event === "TokenMinted")?.args?.receiptId.toNumber()
+            receiptId1 = (() => { const log = receipt1.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.receiptId; })()
 
             // Mint to customer2
             const tx2 = await vwblFidemToken
                 .connect(tokenOwner)
-                .mint(tokenId, customer2.address, utils.parseEther("50"),  "STRIPE-124", { value: fee })
+                .mint(tokenId, customer2.address, ethers.parseEther("50"),  "STRIPE-124", { value: fee })
             const receipt2 = await tx2.wait()
-            receiptId2 = receipt2.events?.find((e: any) => e.event === "TokenMinted")?.args?.receiptId.toNumber()
+            receiptId2 = (() => { const log = receipt2.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.receiptId; })()
         })
 
         it("should retrieve receipt by ID", async () => {
@@ -832,7 +830,7 @@ describe("VWBLFidemToken", () => {
             const newShares = [10000]
             await vwblFidemToken
                 .connect(tokenOwner)
-                .create("https://example.com", ethers.utils.formatBytes32String("doc2"), newRecipients, newShares, {
+                .create("https://example.com", ethers.encodeBytes32String("doc2"), newRecipients, newShares, {
                     value: fee,
                 })
             const newTokenId = 2
@@ -850,7 +848,7 @@ describe("VWBLFidemToken", () => {
             const VWBLFidemToken = await ethers.getContractFactory("VWBLFidemToken")
             vwblFidemToken = await upgrades.deployProxy(
                 VWBLFidemToken,
-                [baseURI, gatewayProxy.address, accessControlCheckerByERC1155.address, "Hello VWBL Fidem"],
+                [baseURI, await gatewayProxy.getAddress(), await accessControlCheckerByERC1155.getAddress(), "Hello VWBL Fidem"],
                 { initializer: "initialize", kind: "uups" }
             )
 
@@ -865,7 +863,7 @@ describe("VWBLFidemToken", () => {
 
             await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
 
-            proxyAddress = vwblFidemToken.address
+            proxyAddress = await vwblFidemToken.getAddress()
 
             // Create a token
             const recipients = [recipient1.address, recipient2.address]
