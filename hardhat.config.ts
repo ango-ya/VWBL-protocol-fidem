@@ -4,6 +4,7 @@ import { HardhatUserConfig } from "hardhat/config"
 import "@nomicfoundation/hardhat-toolbox"
 import "@nomiclabs/hardhat-web3"
 import "@openzeppelin/hardhat-upgrades"
+import "@typechain/hardhat"
 
 dotenv.config()
 
@@ -54,6 +55,11 @@ const config: HardhatUserConfig = {
             url: process.env.JOC_TESTNET_URL || "",
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : []
         }
+    },
+    typechain: {
+        target: "ethers-v6",
+        outDir: "typechain-types",
+        alwaysGenerateOverloads: false,
     },
 }
 
