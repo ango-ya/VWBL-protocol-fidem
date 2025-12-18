@@ -258,15 +258,7 @@ contract VWBLFidemToken is
         require(msg.value >= vwblFee, "Insufficient VWBL fee");
 
         // Process the mint using internal helper
-        _processMint(
-            receiptId,
-            tokenId,
-            customer,
-            saleAmount,
-            paymentInvoiceId,
-            vwblFee,
-            getGatewayAddress()
-        );
+        _processMint(receiptId, tokenId, customer, saleAmount, paymentInvoiceId, vwblFee, getGatewayAddress());
 
         // Refund excess ETH if any
         if (msg.value > vwblFee) {
