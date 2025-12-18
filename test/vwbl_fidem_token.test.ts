@@ -1082,6 +1082,73 @@ describe("VWBLFidemToken", () => {
         })
     })
 
+    describe("Batch Size Limits", () => {
+        let tokenId: number
+
+        beforeEach(async () => {
+            const VWBLFidemToken = await ethers.getContractFactory("VWBLFidemToken")
+            vwblFidemToken = await upgrades.deployProxy(
+                VWBLFidemToken,
+                [baseURI, await gatewayProxy.getAddress(), await accessControlCheckerByERC1155.getAddress(), "Hello VWBL Fidem"],
+                { initializer: "initialize", kind: "uups" }
+            )
+
+            const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
+            await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
+
+            const recipients = [recipient1.address, recipient2.address]
+            const shares = [6000, 4000]
+            const tx = await vwblFidemToken
+                .connect(tokenOwner)
+                .create("https://example.com", TEST_DOCUMENT_ID1, recipients, shares, { value: fee })
+            const receipt = await tx.wait()
+            const event = receipt?.logs
+                .map(log => {
+                    try {
+                        return vwblFidemToken.interface.parseLog({ topics: [...log.topics], data: log.data })
+                    } catch {
+                        return null
+                    }
+                })
+                .find(parsed => parsed?.name === "TokenCreated")
+            tokenId = event?.args[0]
+        })
+
+        // Note: Maximum batch size is 48 items (tested in BATCH_SIZE_INVESTIGATION.md)
+        // This test ensures the recommended safe limit works correctly
+        it("should handle batch size of 30 (recommended safe limit)", async () => {
+            const batchSize = 30
+            const receiptIds = Array.from({ length: batchSize }, () => getNextReceiptId())
+            const tokenIds = Array(batchSize).fill(tokenId)
+            const customers = Array(batchSize).fill(customer1.address)
+            const saleAmounts = Array(batchSize).fill(ethers.parseEther("100"))
+            const invoiceIds = Array.from({ length: batchSize }, (_, i) => `INVOICE-${i}`)
+            const totalFee = fee * BigInt(batchSize)
+
+            await expect(
+                vwblFidemToken
+                    .connect(tokenOwner)
+                    .mintBatch(receiptIds, tokenIds, customers, saleAmounts, invoiceIds, { value: totalFee })
+            ).to.not.be.reverted
+        })
+
+        it("should fail with batch size exceeding limit (49+)", async () => {
+            const batchSize = 49
+            const receiptIds = Array.from({ length: batchSize }, () => getNextReceiptId())
+            const tokenIds = Array(batchSize).fill(tokenId)
+            const customers = Array(batchSize).fill(customer1.address)
+            const saleAmounts = Array(batchSize).fill(ethers.parseEther("100"))
+            const invoiceIds = Array.from({ length: batchSize }, (_, i) => `INVOICE-${i}`)
+            const totalFee = fee * BigInt(batchSize)
+
+            await expect(
+                vwblFidemToken
+                    .connect(tokenOwner)
+                    .mintBatch(receiptIds, tokenIds, customers, saleAmounts, invoiceIds, { value: totalFee })
+            ).to.be.reverted
+        })
+    })
+
     describe("Upgradeability", () => {
         let proxyAddress: string
 

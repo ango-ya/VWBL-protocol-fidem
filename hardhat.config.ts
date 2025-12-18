@@ -22,6 +22,7 @@ const config: HardhatUserConfig = {
         hardhat: {
             chainId: 1337,
             allowUnlimitedContractSize: true,
+            blockGasLimit: 100000000, // 100M gas for testing large batches
         },
         ethereum: {
             url: process.env.ETHEREUM_URL || "",
