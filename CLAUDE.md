@@ -76,6 +76,21 @@ yarn deploy:local         # Local Hardhat network
 - `PRIVATE_KEY` - Deployer's private key
 - Network-specific RPC URL (e.g., `POLYGON_URL`)
 
+## Development Workflow
+
+**CRITICAL RULE: Never commit code without passing tests.**
+
+Before making any git commits:
+1. Run `yarn test` to ensure all tests pass
+2. If you modify contracts or their function signatures, update corresponding tests
+3. Only create commits after confirming that all tests pass successfully
+
+This rule applies to all changes, including:
+- Contract modifications
+- New feature implementations
+- Bug fixes
+- Refactoring work
+
 ## Architecture
 
 ### Core Components
