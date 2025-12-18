@@ -62,11 +62,9 @@ describe("VWBLFidemToken", () => {
 
             const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
 
-            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
 
             await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
 
-            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
 
             expect(await vwblFidemToken.getAddress()).to.be.properAddress
         })
@@ -88,11 +86,9 @@ describe("VWBLFidemToken", () => {
 
             const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
 
-            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
 
             await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
 
-            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
 
             expect(await vwblFidemToken.baseURI()).to.equal(baseURI)
             expect(await vwblFidemToken.gatewayProxy()).to.equal(await gatewayProxy.getAddress())
@@ -119,11 +115,9 @@ describe("VWBLFidemToken", () => {
 
             const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
 
-            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
 
             await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
 
-            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
 
             expect(await vwblFidemToken.owner()).to.equal(owner.address)
         })
@@ -140,13 +134,11 @@ describe("VWBLFidemToken", () => {
 
             // Grant roles to tokenOwner for testing
             const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
-            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
             await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
-            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
         })
 
         context("When creating a token with revenue share configuration", () => {
-            it("should create a new token and assign Token Owner", async () => {
+            it("should create a new token", async () => {
                 const recipients = [recipient1.address, recipient2.address]
                 const shares = [6000, 4000] // 60% / 40%
 
@@ -158,7 +150,6 @@ describe("VWBLFidemToken", () => {
                 const tokenId = (() => { const log = receipt.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenCreated"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.tokenId; })()
 
                 expect(tokenId).to.equal(1)
-                expect(await vwblFidemToken.tokenOwners(tokenId)).to.equal(tokenOwner.address)
             })
 
             it("should grant access control to token owner without minting token", async () => {
@@ -182,7 +173,6 @@ describe("VWBLFidemToken", () => {
                 expect(tokenInfo.documentId).to.equal(TEST_DOCUMENT_ID1)
 
                 // Token owner has access control through minter status, not token ownership
-                expect(await vwblFidemToken.tokenOwners(tokenId)).to.equal(tokenOwner.address)
             })
 
             it("should store revenue share configuration correctly", async () => {
@@ -208,7 +198,7 @@ describe("VWBLFidemToken", () => {
                         .create("https://vwbl.network/key", TEST_DOCUMENT_ID1, recipients, shares, { value: fee })
                 )
                     .to.emit(vwblFidemToken, "TokenCreated")
-                    .withArgs(1, tokenOwner.address, TEST_DOCUMENT_ID1, recipients, shares)
+                    .withArgs(1, TEST_DOCUMENT_ID1, recipients, shares)
             })
         })
 
@@ -272,9 +262,7 @@ describe("VWBLFidemToken", () => {
 
             // Grant roles to tokenOwner for testing
             const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
-            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
             await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
-            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
 
             // Create a token first
             const recipients = [recipient1.address, recipient2.address]
@@ -368,7 +356,7 @@ describe("VWBLFidemToken", () => {
             })
         })
 
-        context("When account without EXECUTOR_ROLE tries to mint", () => {
+        context("When account without MINTER_ROLE tries to mint", () => {
             it("should revert", async () => {
                 await expect(
                     vwblFidemToken
@@ -444,9 +432,7 @@ describe("VWBLFidemToken", () => {
 
             // Grant roles to tokenOwner for testing
             const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
-            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
             await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
-            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
 
             const recipients = [recipient1.address, recipient2.address]
             const shares = [6000, 4000]
@@ -487,7 +473,7 @@ describe("VWBLFidemToken", () => {
 
                 await expect(
                     vwblFidemToken.connect(customer1).updateRevenueShare(tokenId, newRecipients, newShares)
-                ).to.be.revertedWith("Only Token Owner can update")
+                ).to.be.reverted
             })
         })
 
@@ -496,7 +482,7 @@ describe("VWBLFidemToken", () => {
                 const newRecipients = [recipient1.address, recipient2.address]
                 const newShares = [8000, 2000]
 
-                await vwblFidemToken.connect(owner).updateRevenueShareByAdmin(tokenId, newRecipients, newShares)
+                await vwblFidemToken.connect(owner).updateRevenueShare(tokenId, newRecipients, newShares)
 
                 const config = await vwblFidemToken.getRevenueShareConfig(tokenId)
                 expect(config[1].map((s: any) => s)).to.deep.equal(newShares)
@@ -577,7 +563,7 @@ describe("VWBLFidemToken", () => {
                 // Contract owner (admin) updates
                 await vwblFidemToken
                     .connect(owner)
-                    .updateRevenueShareByAdmin(tokenId, [recipient1.address, recipient2.address], [5000, 5000])
+                    .updateRevenueShare(tokenId, [recipient1.address, recipient2.address], [5000, 5000])
 
                 const history = await vwblFidemToken.getRevenueShareHistory(tokenId)
 
@@ -628,11 +614,9 @@ describe("VWBLFidemToken", () => {
 
             const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
 
-            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
 
             await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
 
-            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
 
             const recipients = [recipient1.address, recipient2.address]
             const shares = [6000, 4000]
@@ -724,7 +708,7 @@ describe("VWBLFidemToken", () => {
                     vwblFidemToken
                         .connect(customer1)
                         .safeTransferByOwner(customer1.address, customer2.address, tokenId, 1)
-                ).to.be.revertedWith("Ownable: caller is not the owner")
+                ).to.be.reverted
             })
         })
 
@@ -756,11 +740,9 @@ describe("VWBLFidemToken", () => {
 
             const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
 
-            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
 
             await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
 
-            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
 
             const recipients = [recipient1.address, recipient2.address]
             const shares = [6000, 4000]
@@ -857,11 +839,9 @@ describe("VWBLFidemToken", () => {
 
             const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
 
-            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
 
             await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
 
-            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
 
             proxyAddress = await vwblFidemToken.getAddress()
 
@@ -876,7 +856,6 @@ describe("VWBLFidemToken", () => {
         it("should preserve state after upgrade", async () => {
             // Get state before upgrade
             const counterBefore = await vwblFidemToken.counter()
-            const tokenOwnerBefore = await vwblFidemToken.tokenOwners(1)
 
             // Deploy V2 (same contract for testing)
             const VWBLFidemTokenV2 = await ethers.getContractFactory("VWBLFidemToken")
@@ -884,10 +863,8 @@ describe("VWBLFidemToken", () => {
 
             // Verify state is preserved
             const counterAfter = await upgraded.counter()
-            const tokenOwnerAfter = await upgraded.tokenOwners(1)
 
             expect(counterAfter).to.equal(counterBefore)
-            expect(tokenOwnerAfter).to.equal(tokenOwnerBefore)
         })
 
         it("should only allow owner to upgrade", async () => {

@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 // OpenZeppelin Upgradeable contracts
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -81,7 +80,6 @@ contract VWBLFidemToken is
 
     // ============ VWBLFidemToken Specific Storage ============
 
-    mapping(uint256 => address) public tokenOwners;
     mapping(uint256 => RevenueShareConfig) public tokenIdToRevenueShare;
     uint256 public receiptCounter;
     mapping(uint256 => MintReceipt) public receipts;
@@ -98,16 +96,15 @@ contract VWBLFidemToken is
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
-     * We have 9 VWBLFidemToken-specific variables, so reserve 41 slots to make 50 total.
+     * We have 8 VWBLFidemToken-specific variables, so reserve 42 slots to make 50 total.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[41] private __gap;
+    uint256[42] private __gap;
 
     // ============ Events ============
 
     event TokenCreated(
         uint256 indexed tokenId,
-        address indexed tokenOwner,
         bytes32 documentId,
         address[] recipients,
         uint256[] shares
@@ -168,7 +165,7 @@ contract VWBLFidemToken is
 
     // ============ UUPS Upgrade Authorization ============
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 
     // ============ Required Overrides ============
 
@@ -219,9 +216,6 @@ contract VWBLFidemToken is
         // Store TokenInfo
         tokenIdToTokenInfo[tokenId] = TokenInfo(_documentId, msg.sender, _getKeyUrl);
 
-        // Store Token Owner
-        tokenOwners[tokenId] = msg.sender;
-
         // Store Revenue Share Config
         tokenIdToRevenueShare[tokenId] = RevenueShareConfig({
             recipients: _recipients,
@@ -248,7 +242,7 @@ contract VWBLFidemToken is
             require(success, "Refund failed");
         }
 
-        emit TokenCreated(tokenId, msg.sender, _documentId, _recipients, _shares);
+        emit TokenCreated(tokenId, _documentId, _recipients, _shares);
 
         return tokenId;
     }
@@ -256,7 +250,7 @@ contract VWBLFidemToken is
     // ============ mint() Function ============
 
     /**
-     * @notice Mint additional tokens to customer (EXECUTOR_ROLE only)
+     * @notice Mint additional tokens to customer (MINTER_ROLE only)
      * @param tokenId The token ID to mint
      * @param customer The customer address
      * @param saleAmount The sale amount for revenue calculation
@@ -267,7 +261,7 @@ contract VWBLFidemToken is
         address customer,
         uint256 saleAmount,
         string memory paymentInvoiceId
-    ) public payable onlyRole(EXECUTOR_ROLE) returns (uint256) {
+    ) public payable onlyRole(MINTER_ROLE) returns (uint256) {
         // Input validation
         require(customer != address(0), "Invalid customer address");
         require(tokenIdToTokenInfo[tokenId].minterAddress != address(0), "Token does not exist");
@@ -319,25 +313,13 @@ contract VWBLFidemToken is
     // ============ Revenue Share Management ============
 
     /**
-     * @notice Update revenue share configuration (Token Owner only)
+     * @notice Update revenue share configuration (MINTER_ROLE only)
      */
     function updateRevenueShare(
         uint256 tokenId,
         address[] memory _recipients,
         uint256[] memory _shares
-    ) public {
-        require(tokenOwners[tokenId] == msg.sender, "Only Token Owner can update");
-        _updateRevenueShareConfig(tokenId, _recipients, _shares);
-    }
-
-    /**
-     * @notice Update revenue share configuration (Contract Owner only)
-     */
-    function updateRevenueShareByAdmin(
-        uint256 tokenId,
-        address[] memory _recipients,
-        uint256[] memory _shares
-    ) public onlyOwner {
+    ) public onlyRole(MINTER_ROLE) {
         _updateRevenueShareConfig(tokenId, _recipients, _shares);
     }
 
@@ -416,8 +398,8 @@ contract VWBLFidemToken is
     // ============ Transfer Restrictions (SBT-like) ============
 
     /**
-     * @notice Transfer token with contract owner authorization (one-time only)
-     * @dev Only contract owner can call this function
+     * @notice Transfer token with MINTER authorization (one-time only)
+     * @dev Only MINTER_ROLE can call this function
      * @param from Source address
      * @param to Destination address
      * @param id Token ID
@@ -428,7 +410,7 @@ contract VWBLFidemToken is
         address to,
         uint256 id,
         uint256 amount
-    ) public onlyOwner nonReentrant {
+    ) public onlyRole(MINTER_ROLE) nonReentrant {
         require(from != address(0), "Transfer from zero address");
         require(to != address(0), "Transfer to zero address");
 
@@ -461,10 +443,10 @@ contract VWBLFidemToken is
      *
      * Restrictions:
      * - Normal transfers are blocked (will revert)
-     * - Only minting, burning, and owner-authorized transfers are allowed
+     * - Only minting, burning, and MINTER-authorized transfers are allowed
      *
      * @notice Users cannot directly call safeTransferFrom or safeBatchTransferFrom
-     * @notice Use safeTransferByOwner for owner-authorized one-time transfers
+     * @notice Use safeTransferByOwner for MINTER-authorized one-time transfers
      */
     function _beforeTokenTransfer(
         address operator,
