@@ -269,7 +269,7 @@ describe("VWBLFidemToken", () => {
                 expect(storedReceipt.tokenId).to.equal(tokenId)
                 expect(storedReceipt.customer).to.equal(customer1.address)
                 expect(storedReceipt.saleAmount).to.equal(saleAmount)
-                expect(storedReceipt.fidemInvoiceId).to.equal("FIDEM-001")
+                expect(storedReceipt.fidemReceiptId).to.equal("FIDEM-001")
                 expect(storedReceipt.paymentInvoiceId).to.equal("STRIPE-123")
             })
 
@@ -720,7 +720,7 @@ describe("VWBLFidemToken", () => {
 
             expect(receipt.receiptId).to.equal(receiptId1)
             expect(receipt.customer).to.equal(customer1.address)
-            expect(receipt.fidemInvoiceId).to.equal("FIDEM-001")
+            expect(receipt.fidemReceiptId).to.equal("FIDEM-001")
         })
 
         it("should get all receipts for a token", async () => {

@@ -55,7 +55,7 @@ contract VWBLFidemToken is
         address customer;
         uint256 saleAmount;
         uint256 timestamp;
-        string fidemInvoiceId;
+        string fidemReceiptId;
         string paymentInvoiceId;
         address[] recipients; // Revenue share recipients at time of purchase
         uint256[] shares; // Revenue share percentages at time of purchase (basis points)
@@ -113,7 +113,7 @@ contract VWBLFidemToken is
         uint256 indexed tokenId,
         address indexed customer,
         uint256 saleAmount,
-        string fidemInvoiceId,
+        string fidemReceiptId,
         string paymentInvoiceId
     );
 
@@ -242,14 +242,14 @@ contract VWBLFidemToken is
      * @param tokenId The token ID to mint
      * @param customer The customer address
      * @param saleAmount The sale amount for revenue calculation
-     * @param fidemInvoiceId Fidem's invoice ID (string)
+     * @param fidemReceiptId Fidem's receipt ID for internal record management (string)
      * @param paymentInvoiceId Payment platform's invoice ID (string)
      */
     function mint(
         uint256 tokenId,
         address customer,
         uint256 saleAmount,
-        string memory fidemInvoiceId,
+        string memory fidemReceiptId,
         string memory paymentInvoiceId
     ) public payable returns (uint256) {
         // Input validation
@@ -273,7 +273,7 @@ contract VWBLFidemToken is
             customer: customer,
             saleAmount: saleAmount,
             timestamp: block.timestamp,
-            fidemInvoiceId: fidemInvoiceId,
+            fidemReceiptId: fidemReceiptId,
             paymentInvoiceId: paymentInvoiceId,
             recipients: config.recipients,
             shares: config.shares
@@ -299,7 +299,7 @@ contract VWBLFidemToken is
         // Mint token to customer
         _mint(customer, tokenId, 1, "");
 
-        emit TokenMinted(receiptId, tokenId, customer, saleAmount, fidemInvoiceId, paymentInvoiceId);
+        emit TokenMinted(receiptId, tokenId, customer, saleAmount, fidemReceiptId, paymentInvoiceId);
         emit ReceiptCreated(receiptId, tokenId, customer);
 
         return receiptId;
