@@ -21,10 +21,10 @@ async function main() {
     const upgraded = await upgrades.upgradeProxy(proxyAddress, VWBLFidemToken)
 
     console.log("VWBLFidemToken upgraded successfully")
-    console.log("Proxy address (unchanged):", upgraded.address)
+    console.log("Proxy address (unchanged):", upgraded.target)
 
     // Get new implementation address
-    const newImplAddress = await upgrades.erc1967.getImplementationAddress(upgraded.address)
+    const newImplAddress = await upgrades.erc1967.getImplementationAddress(upgraded.target)
     console.log("New implementation deployed to:", newImplAddress)
 }
 
