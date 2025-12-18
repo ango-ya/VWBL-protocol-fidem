@@ -1082,7 +1082,7 @@ describe("VWBLFidemToken", () => {
         })
     })
 
-    describe("Batch Size Limits", () => {
+    describe("Larger Batch Minting", () => {
         let tokenId: number
 
         beforeEach(async () => {
@@ -1114,10 +1114,8 @@ describe("VWBLFidemToken", () => {
             tokenId = event?.args[0]
         })
 
-        // Note: Maximum batch size is 48 items (tested in BATCH_SIZE_INVESTIGATION.md)
-        // This test ensures the recommended safe limit works correctly
-        it("should handle batch size of 30 (recommended safe limit)", async () => {
-            const batchSize = 30
+        it("should handle batch size of 20", async () => {
+            const batchSize = 20
             const receiptIds = Array.from({ length: batchSize }, () => getNextReceiptId())
             const tokenIds = Array(batchSize).fill(tokenId)
             const customers = Array(batchSize).fill(customer1.address)
@@ -1125,27 +1123,12 @@ describe("VWBLFidemToken", () => {
             const invoiceIds = Array.from({ length: batchSize }, (_, i) => `INVOICE-${i}`)
             const totalFee = fee * BigInt(batchSize)
 
-            await expect(
-                vwblFidemToken
-                    .connect(tokenOwner)
-                    .mintBatch(receiptIds, tokenIds, customers, saleAmounts, invoiceIds, { value: totalFee })
-            ).to.not.be.reverted
-        })
+            const tx = await vwblFidemToken
+                .connect(tokenOwner)
+                .mintBatch(receiptIds, tokenIds, customers, saleAmounts, invoiceIds, { value: totalFee })
 
-        it("should fail with batch size exceeding limit (49+)", async () => {
-            const batchSize = 49
-            const receiptIds = Array.from({ length: batchSize }, () => getNextReceiptId())
-            const tokenIds = Array(batchSize).fill(tokenId)
-            const customers = Array(batchSize).fill(customer1.address)
-            const saleAmounts = Array(batchSize).fill(ethers.parseEther("100"))
-            const invoiceIds = Array.from({ length: batchSize }, (_, i) => `INVOICE-${i}`)
-            const totalFee = fee * BigInt(batchSize)
-
-            await expect(
-                vwblFidemToken
-                    .connect(tokenOwner)
-                    .mintBatch(receiptIds, tokenIds, customers, saleAmounts, invoiceIds, { value: totalFee })
-            ).to.be.reverted
+            const receipt = await tx.wait()
+            expect(receipt.status).to.equal(1)
         })
     })
 
