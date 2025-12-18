@@ -811,12 +811,25 @@ describe("VWBLFidemToken", () => {
             // Create a new token without minting
             const newRecipients = [recipient1.address]
             const newShares = [10000]
-            await vwblFidemToken
+            const tx = await vwblFidemToken
                 .connect(tokenOwner)
                 .create("https://example.com", ethers.encodeBytes32String("doc2"), newRecipients, newShares, {
                     value: fee,
                 })
-            const newTokenId = 2
+
+            // Get the tokenId from the TokenCreated event
+            const receipt = await tx.wait()
+            const event = receipt?.logs
+                .map(log => {
+                    try {
+                        return vwblFidemToken.interface.parseLog({ topics: [...log.topics], data: log.data })
+                    } catch {
+                        return null
+                    }
+                })
+                .find(parsed => parsed?.name === "TokenCreated")
+
+            const newTokenId = event?.args[0]
 
             // Should return empty array, not revert
             const receipts = await vwblFidemToken.getReceiptsByTokenPaginated(newTokenId, 0, 10)
