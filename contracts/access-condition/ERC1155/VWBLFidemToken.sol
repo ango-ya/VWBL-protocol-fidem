@@ -253,19 +253,102 @@ contract VWBLFidemToken is
         uint256 saleAmount,
         string memory paymentInvoiceId
     ) public payable onlyRole(MINTER_ROLE) returns (uint256) {
-        // Input validation
-        require(customer != address(0), "Invalid customer address");
-        require(tokenIdToTokenInfo[tokenId].minterAddress != address(0), "Token does not exist");
-
         // Fee validation
         uint256 vwblFee = getFee();
         require(msg.value >= vwblFee, "Insufficient VWBL fee");
+
+        // Process the mint using internal helper
+        uint256 receiptId = _processMint(
+            tokenId,
+            customer,
+            saleAmount,
+            paymentInvoiceId,
+            vwblFee,
+            getGatewayAddress()
+        );
+
+        // Refund excess ETH if any
+        if (msg.value > vwblFee) {
+            uint256 refund = msg.value - vwblFee;
+            (bool success, ) = payable(msg.sender).call{value: refund}("");
+            require(success, "Refund failed");
+        }
+
+        return receiptId;
+    }
+
+    /**
+     * @notice Batch mint tokens to multiple customers (MINTER_ROLE only)
+     * @param tokenIds Array of token IDs to mint
+     * @param customers Array of customer addresses
+     * @param saleAmounts Array of sale amounts for revenue calculation
+     * @param paymentInvoiceIds Array of payment platform's invoice IDs
+     * @return receiptIds Array of created receipt IDs
+     */
+    function mintBatch(
+        uint256[] memory tokenIds,
+        address[] memory customers,
+        uint256[] memory saleAmounts,
+        string[] memory paymentInvoiceIds
+    ) public payable onlyRole(MINTER_ROLE) returns (uint256[] memory) {
+        // Input validation - all arrays must have same length
+        uint256 batchSize = tokenIds.length;
+        require(batchSize > 0, "Empty batch");
+        require(customers.length == batchSize, "Customers length mismatch");
+        require(saleAmounts.length == batchSize, "SaleAmounts length mismatch");
+        require(paymentInvoiceIds.length == batchSize, "PaymentInvoiceIds length mismatch");
+
+        // Calculate total fee required
+        uint256 vwblFee = getFee();
+        uint256 totalFee = vwblFee * batchSize;
+        require(msg.value >= totalFee, "Insufficient VWBL fee for batch");
+
+        // Array to store receipt IDs
+        uint256[] memory receiptIds = new uint256[](batchSize);
+        address gatewayAddr = getGatewayAddress();
+
+        // Process each mint
+        for (uint256 i = 0; i < batchSize; i++) {
+            receiptIds[i] = _processMint(
+                tokenIds[i],
+                customers[i],
+                saleAmounts[i],
+                paymentInvoiceIds[i],
+                vwblFee,
+                gatewayAddr
+            );
+        }
+
+        // Refund excess ETH if any
+        if (msg.value > totalFee) {
+            uint256 refund = msg.value - totalFee;
+            (bool success, ) = payable(msg.sender).call{value: refund}("");
+            require(success, "Refund failed");
+        }
+
+        return receiptIds;
+    }
+
+    /**
+     * @dev Internal function to process a single mint
+     */
+    function _processMint(
+        uint256 tokenId,
+        address customer,
+        uint256 saleAmount,
+        string memory paymentInvoiceId,
+        uint256 vwblFee,
+        address gatewayAddr
+    ) private returns (uint256) {
+        // Validate inputs
+        require(customer != address(0), "Invalid customer address");
+        require(tokenIdToTokenInfo[tokenId].minterAddress != address(0), "Token does not exist");
 
         // Get current revenue share configuration
         RevenueShareConfig memory config = tokenIdToRevenueShare[tokenId];
         require(config.isConfigured, "Revenue share not configured");
 
-        // Create receipt with immutable snapshot of share configuration at purchase time
+        // Create receipt
         uint256 receiptId = ++receiptCounter;
         receipts[receiptId] = MintReceipt({
             receiptId: receiptId,
@@ -282,19 +365,12 @@ contract VWBLFidemToken is
         tokenIdToReceipts[tokenId].push(receiptId);
         customerToReceipts[customer].push(receiptId);
 
-        // Pay VWBL fee to gateway (only the required fee amount)
-        IVWBLGateway(getGatewayAddress()).payFee{value: vwblFee}(tokenIdToTokenInfo[tokenId].documentId, customer);
-
-        // Refund excess ETH if any
-        if (msg.value > vwblFee) {
-            uint256 refund = msg.value - vwblFee;
-            (bool success, ) = payable(msg.sender).call{value: refund}("");
-            require(success, "Refund failed");
-        }
-
-        // Mint token to customer
+        // Pay VWBL fee and mint
+        bytes32 docId = tokenIdToTokenInfo[tokenId].documentId;
+        IVWBLGateway(gatewayAddr).payFee{value: vwblFee}(docId, customer);
         _mint(customer, tokenId, 1, "");
 
+        // Emit events
         emit TokenMinted(receiptId, tokenId, customer, saleAmount, paymentInvoiceId);
         emit ReceiptCreated(receiptId, tokenId, customer);
 
