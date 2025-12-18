@@ -22,6 +22,7 @@ const config: HardhatUserConfig = {
         hardhat: {
             chainId: 1337,
             allowUnlimitedContractSize: true,
+            blockGasLimit: 30000000, // 30M gas - matches Polygon mainnet limit for realistic testing
         },
         ethereum: {
             url: process.env.ETHEREUM_URL || "",
