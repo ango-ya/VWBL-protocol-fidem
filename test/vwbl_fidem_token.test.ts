@@ -57,6 +57,17 @@ describe("VWBLFidemToken", () => {
                 }
             )
 
+
+            // Grant roles to tokenOwner for testing
+
+            const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
+
+            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
+
+            await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
+
+            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
+
             await vwblFidemToken.deployed()
 
             expect(vwblFidemToken.address).to.be.properAddress
@@ -73,6 +84,17 @@ describe("VWBLFidemToken", () => {
                     kind: "uups",
                 }
             )
+
+
+            // Grant roles to tokenOwner for testing
+
+            const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
+
+            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
+
+            await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
+
+            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
 
             expect(await vwblFidemToken.baseURI()).to.equal(baseURI)
             expect(await vwblFidemToken.gatewayProxy()).to.equal(gatewayProxy.address)
@@ -94,6 +116,17 @@ describe("VWBLFidemToken", () => {
                 }
             )
 
+
+            // Grant roles to tokenOwner for testing
+
+            const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
+
+            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
+
+            await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
+
+            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
+
             expect(await vwblFidemToken.owner()).to.equal(owner.address)
         })
     })
@@ -106,6 +139,12 @@ describe("VWBLFidemToken", () => {
                 [baseURI, gatewayProxy.address, accessControlCheckerByERC1155.address, "Hello VWBL Fidem"],
                 { initializer: "initialize", kind: "uups" }
             )
+
+            // Grant roles to tokenOwner for testing
+            const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
+            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
+            await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
+            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
         })
 
         context("When creating a token with revenue share configuration", () => {
@@ -233,6 +272,12 @@ describe("VWBLFidemToken", () => {
                 { initializer: "initialize", kind: "uups" }
             )
 
+            // Grant roles to tokenOwner for testing
+            const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
+            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
+            await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
+            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
+
             // Create a token first
             const recipients = [recipient1.address, recipient2.address]
             const shares = [6000, 4000]
@@ -325,7 +370,7 @@ describe("VWBLFidemToken", () => {
             })
         })
 
-        context("When non-Token Owner tries to mint", () => {
+        context("When account without EXECUTOR_ROLE tries to mint", () => {
             it("should revert", async () => {
                 await expect(
                     vwblFidemToken
@@ -333,7 +378,7 @@ describe("VWBLFidemToken", () => {
                         .mint(tokenId, customer2.address, utils.parseEther("100"),  "STRIPE-123", {
                             value: fee,
                         })
-                ).to.be.revertedWith("Only Token Owner can mint")
+                ).to.be.reverted // AccessControl will revert
             })
         })
 
@@ -398,6 +443,12 @@ describe("VWBLFidemToken", () => {
                 [baseURI, gatewayProxy.address, accessControlCheckerByERC1155.address, "Hello VWBL Fidem"],
                 { initializer: "initialize", kind: "uups" }
             )
+
+            // Grant roles to tokenOwner for testing
+            const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
+            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
+            await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
+            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
 
             const recipients = [recipient1.address, recipient2.address]
             const shares = [6000, 4000]
@@ -574,6 +625,17 @@ describe("VWBLFidemToken", () => {
                 { initializer: "initialize", kind: "uups" }
             )
 
+
+            // Grant roles to tokenOwner for testing
+
+            const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
+
+            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
+
+            await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
+
+            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
+
             const recipients = [recipient1.address, recipient2.address]
             const shares = [6000, 4000]
             const tx = await vwblFidemToken
@@ -691,6 +753,17 @@ describe("VWBLFidemToken", () => {
                 { initializer: "initialize", kind: "uups" }
             )
 
+
+            // Grant roles to tokenOwner for testing
+
+            const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
+
+            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
+
+            await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
+
+            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
+
             const recipients = [recipient1.address, recipient2.address]
             const shares = [6000, 4000]
             const tx = await vwblFidemToken
@@ -780,6 +853,17 @@ describe("VWBLFidemToken", () => {
                 [baseURI, gatewayProxy.address, accessControlCheckerByERC1155.address, "Hello VWBL Fidem"],
                 { initializer: "initialize", kind: "uups" }
             )
+
+
+            // Grant roles to tokenOwner for testing
+
+            const MINTER_ROLE = await vwblFidemToken.MINTER_ROLE()
+
+            const EXECUTOR_ROLE = await vwblFidemToken.EXECUTOR_ROLE()
+
+            await vwblFidemToken.connect(owner).grantRole(MINTER_ROLE, tokenOwner.address)
+
+            await vwblFidemToken.connect(owner).grantRole(EXECUTOR_ROLE, tokenOwner.address)
 
             proxyAddress = vwblFidemToken.address
 

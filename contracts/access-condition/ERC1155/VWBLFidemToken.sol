@@ -5,6 +5,7 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -28,6 +29,7 @@ import "../AbstractVWBLTokenUpgradeable.sol";
  */
 contract VWBLFidemToken is
     AbstractVWBLTokenUpgradeable,
+    AccessControlUpgradeable,
     ReentrancyGuardUpgradeable,
     UUPSUpgradeable,
     ERC1155Upgradeable,
@@ -39,6 +41,10 @@ contract VWBLFidemToken is
     // ============ Constants ============
 
     uint256 public constant BASIS_POINTS_TOTAL = 10000; // 100% = 10000 basis points
+
+    // Role definitions for access control
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
 
     // ============ Structs ============
 
@@ -149,10 +155,16 @@ contract VWBLFidemToken is
     ) public initializer {
         // Call parent initializers in linearized order
         __AbstractVWBLToken_init(_baseURI, _gatewayProxy, _accessCheckerContract, _signMessage);
+        __AccessControl_init();
         __ReentrancyGuard_init();
         __ERC1155_init(_baseURI);
         __ERC1155Burnable_init();
         __UUPSUpgradeable_init();
+
+        // Grant roles to deployer (owner)
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(EXECUTOR_ROLE, msg.sender);
 
         // Initialize VWBLFidemToken-specific state
         receiptCounter = 0;
@@ -173,7 +185,7 @@ contract VWBLFidemToken is
         public
         view
         virtual
-        override(ERC1155Upgradeable)
+        override(ERC1155Upgradeable, AccessControlUpgradeable)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
@@ -182,7 +194,7 @@ contract VWBLFidemToken is
     // ============ create() Function ============
 
     /**
-     * @notice Create a new token with revenue share configuration
+     * @notice Create a new token with revenue share configuration (MINTER_ROLE only)
      * @param _getKeyUrl The URL of VWBL Network (Key management network)
      * @param _documentId The Identifier of digital content and decryption key
      * @param _recipients Array of revenue share recipient addresses
@@ -193,7 +205,7 @@ contract VWBLFidemToken is
         bytes32 _documentId,
         address[] memory _recipients,
         uint256[] memory _shares
-    ) public payable returns (uint256) {
+    ) public payable onlyRole(MINTER_ROLE) returns (uint256) {
         // Validate inputs
         require(_recipients.length == _shares.length, "Array length mismatch");
         require(_recipients.length > 0, "Empty recipients");
@@ -236,7 +248,7 @@ contract VWBLFidemToken is
     // ============ mint() Function ============
 
     /**
-     * @notice Mint additional tokens to customer (only Token Owner)
+     * @notice Mint additional tokens to customer (EXECUTOR_ROLE only)
      * @param tokenId The token ID to mint
      * @param customer The customer address
      * @param saleAmount The sale amount for revenue calculation
@@ -247,10 +259,9 @@ contract VWBLFidemToken is
         address customer,
         uint256 saleAmount,
         string memory paymentInvoiceId
-    ) public payable returns (uint256) {
+    ) public payable onlyRole(EXECUTOR_ROLE) returns (uint256) {
         // Input validation
         require(customer != address(0), "Invalid customer address");
-        require(tokenOwners[tokenId] == msg.sender, "Only Token Owner can mint");
         require(tokenIdToTokenInfo[tokenId].minterAddress != address(0), "Token does not exist");
 
         // Fee validation
