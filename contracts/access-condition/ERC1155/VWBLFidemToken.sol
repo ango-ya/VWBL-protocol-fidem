@@ -131,12 +131,7 @@ contract VWBLFidemToken is
         uint256 timestamp
     );
 
-    event TransferByOwner(
-        address indexed from,
-        address indexed to,
-        uint256 indexed tokenId,
-        uint256 amount
-    );
+    event TransferByOwner(address indexed from, address indexed to, uint256 indexed tokenId, uint256 amount);
 
     event ReceiptCreated(uint256 indexed receiptId, uint256 indexed tokenId, address indexed customer);
 
@@ -240,9 +235,11 @@ contract VWBLFidemToken is
         require(msg.value >= vwblFee, "Insufficient VWBL fee");
 
         // Integrate with VWBL gateway (only the required fee amount)
-        IAccessControlCheckerByERC1155(accessCheckerContract).grantAccessControlAndRegisterERC1155{
-            value: vwblFee
-        }(_documentId, address(this), tokenId);
+        IAccessControlCheckerByERC1155(accessCheckerContract).grantAccessControlAndRegisterERC1155{value: vwblFee}(
+            _documentId,
+            address(this),
+            tokenId
+        );
 
         // Refund excess ETH if any
         if (msg.value > vwblFee) {
@@ -301,10 +298,7 @@ contract VWBLFidemToken is
         customerToReceipts[customer].push(receiptId);
 
         // Pay VWBL fee to gateway (only the required fee amount)
-        IVWBLGateway(getGatewayAddress()).payFee{value: vwblFee}(
-            tokenIdToTokenInfo[tokenId].documentId,
-            customer
-        );
+        IVWBLGateway(getGatewayAddress()).payFee{value: vwblFee}(tokenIdToTokenInfo[tokenId].documentId, customer);
 
         // Refund excess ETH if any
         if (msg.value > vwblFee) {
@@ -400,11 +394,7 @@ contract VWBLFidemToken is
     /**
      * @notice Get revenue share configuration
      */
-    function getRevenueShareConfig(uint256 tokenId)
-        public
-        view
-        returns (address[] memory, uint256[] memory)
-    {
+    function getRevenueShareConfig(uint256 tokenId) public view returns (address[] memory, uint256[] memory) {
         RevenueShareConfig memory config = tokenIdToRevenueShare[tokenId];
         return (config.recipients, config.shares);
     }
@@ -412,11 +402,7 @@ contract VWBLFidemToken is
     /**
      * @notice Get revenue share history for a token
      */
-    function getRevenueShareHistory(uint256 tokenId)
-        public
-        view
-        returns (RevenueShareHistory[] memory)
-    {
+    function getRevenueShareHistory(uint256 tokenId) public view returns (RevenueShareHistory[] memory) {
         return revenueShareHistory[tokenId];
     }
 
