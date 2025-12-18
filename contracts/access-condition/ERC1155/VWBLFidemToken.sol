@@ -41,7 +41,6 @@ contract VWBLFidemToken is
 
     // Role definitions for access control
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
 
     // ============ Structs ============
 
@@ -151,10 +150,9 @@ contract VWBLFidemToken is
         __ERC1155Burnable_init();
         __UUPSUpgradeable_init();
 
-        // Grant roles to deployer (owner)
+        // Grant roles to deployer
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
-        _grantRole(EXECUTOR_ROLE, msg.sender);
 
         // Initialize VWBLFidemToken-specific state
         receiptCounter = 0;
