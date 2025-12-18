@@ -1,4 +1,4 @@
-import { Contract, utils } from "ethers"
+import { Contract } from "ethers"
 import { assert, expect } from "chai"
 import { ethers } from "hardhat"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
@@ -16,7 +16,7 @@ describe("VWBLERC1155ERC2981", async () => {
     const TEST_DOCUMENT_ID3 = "0xcc00000000000000000000000000000000000000000000000000000000000000"
     const TEST_DOCUMENT_ID4 = "0xdc00000000000000000000000000000000000000000000000000000000000000"
     const TEST_DOCUMENT_ID5 = "0xec00000000000000000000000000000000000000000000000000000000000000"
-    const fee = utils.parseEther("1")
+    const fee = ethers.parseEther("1")
 
     before(async () => {
         accounts = await ethers.getSigners()
@@ -27,21 +27,21 @@ describe("VWBLERC1155ERC2981", async () => {
         vwblGateway = await VWBLGateway.deploy(fee)
 
         const GatewayProxy = await ethers.getContractFactory("GatewayProxy")
-        gatewayProxy = await GatewayProxy.deploy(vwblGateway.address)
+        gatewayProxy = await GatewayProxy.deploy(vwblGateway.target)
 
         const AccessControlCheckerByERC1155 = await ethers.getContractFactory("AccessControlCheckerByERC1155")
-        accessControlCheckerByERC1155 = await AccessControlCheckerByERC1155.deploy(gatewayProxy.address)
+        accessControlCheckerByERC1155 = await AccessControlCheckerByERC1155.deploy(gatewayProxy.target)
 
         const VWBLERC1155 = await ethers.getContractFactory("VWBLERC1155ERC2981")
         vwblERC1155ERC2981 = await VWBLERC1155.deploy(
             "http://xxx.yyy.com",
-            gatewayProxy.address,
-            accessControlCheckerByERC1155.address,
+            gatewayProxy.target,
+            accessControlCheckerByERC1155.target,
             "Hello, VWBL"
         )
 
         const VWBLMetadata = await ethers.getContractFactory("VWBLERC1155ERC2981ForMetadata")
-        vwblMetadata = await VWBLMetadata.deploy(gatewayProxy.address, accessControlCheckerByERC1155.address, "Hello, VWBL")
+        vwblMetadata = await VWBLMetadata.deploy(gatewayProxy.target, accessControlCheckerByERC1155.target, "Hello, VWBL")
 
         const INTERFACE_ID_ERC2981 = "0x2a55205a"
         const supported = await vwblERC1155ERC2981.supportsInterface(INTERFACE_ID_ERC2981)
@@ -60,7 +60,7 @@ describe("VWBLERC1155ERC2981", async () => {
             500, // royalty = 5%
             TEST_DOCUMENT_ID1,
             {
-                value: utils.parseEther("1"),
+                value: ethers.parseEther("1"),
             }
         )
         const tokenIds = await vwblERC1155ERC2981.getTokenByMinter(accounts[1].address);
@@ -78,7 +78,7 @@ describe("VWBLERC1155ERC2981", async () => {
         console.log("     accounts[1].address mint tokenId = 1, amount =", tokenAmount.toString(), " nft")
 
         const createdToken = await accessControlCheckerByERC1155.documentIdToToken(TEST_DOCUMENT_ID1)
-        assert.equal(createdToken.contractAddress, vwblERC1155ERC2981.address)
+        assert.equal(createdToken.contractAddress, vwblERC1155ERC2981.target)
 
         const isPermitted = await vwblGateway.hasAccessControl(accounts[1].address, TEST_DOCUMENT_ID1)
         assert.equal(isPermitted, true)
@@ -87,7 +87,7 @@ describe("VWBLERC1155ERC2981", async () => {
     it("should get nft datas", async () => {
         const erc1155Datas = await accessControlCheckerByERC1155.getERC1155Datas()
         assert.equal(erc1155Datas[0][0], TEST_DOCUMENT_ID1)
-        assert.equal(erc1155Datas[1][0].contractAddress, vwblERC1155ERC2981.address.toString())
+        assert.equal(erc1155Datas[1][0].contractAddress, vwblERC1155ERC2981.target.toString())
         assert.equal(erc1155Datas[1][0].tokenId, "1")
     })
 
@@ -98,7 +98,7 @@ describe("VWBLERC1155ERC2981", async () => {
             500, // royalty = 5%
             TEST_DOCUMENT_ID2,
             {
-                value: utils.parseEther("1"),
+                value: ethers.parseEther("1"),
             }
         )
         const tokenIds = await vwblERC1155ERC2981.getTokenByMinter(accounts[1].address);
@@ -116,7 +116,7 @@ describe("VWBLERC1155ERC2981", async () => {
         console.log("     accounts[1].address mint tokenId = 2, amount =", tokenAmount.toString(), " nft")
 
         const createdToken = await accessControlCheckerByERC1155.documentIdToToken(TEST_DOCUMENT_ID2)
-        assert.equal(createdToken.contractAddress, vwblERC1155ERC2981.address)
+        assert.equal(createdToken.contractAddress, vwblERC1155ERC2981.target)
 
         const isPermitted = await vwblGateway.hasAccessControl(accounts[1].address, TEST_DOCUMENT_ID2)
         assert.equal(isPermitted, true)
@@ -193,7 +193,7 @@ describe("VWBLERC1155ERC2981", async () => {
         await vwblERC1155ERC2981
             .connect(accounts[1])
             .mintBatch("http://aaa.yyy.zzz.com", [100, 200], [500, 500], [TEST_DOCUMENT_ID3, TEST_DOCUMENT_ID4], {
-                value: utils.parseEther("2"),
+                value: ethers.parseEther("2"),
             })
 
         console.log("     accounts[1].address mint tokenId = 3 , amount = 100 nft")
@@ -230,7 +230,7 @@ describe("VWBLERC1155ERC2981", async () => {
         await vwblERC1155ERC2981
             .connect(accounts[1])
             .safeBatchTransferAndPayFee(accounts[1].address, accounts[3].address, [3, 4], [10, 10], "0x00", {
-                value: fee.mul(2),
+                value: fee * 2n,
             })
         const isPermitted = await vwblGateway.hasAccessControl(accounts[3].address, TEST_DOCUMENT_ID4)
         assert.equal(isPermitted, true)
@@ -261,7 +261,7 @@ describe("VWBLERC1155ERC2981", async () => {
     })
 
     it("should successfully grant AccessControl under VWBLMetadata.mint()", async () => {
-        const beforeBalance = await vwblGateway.provider.getBalance(vwblGateway.address)
+        const beforeBalance = await ethers.provider.getBalance(vwblGateway.target)
         await vwblMetadata
             .connect(accounts[2])
             .mint(
@@ -271,15 +271,15 @@ describe("VWBLERC1155ERC2981", async () => {
                 500,
                 TEST_DOCUMENT_ID5,
                 {
-                    value: utils.parseEther("1"),
+                    value: ethers.parseEther("1"),
                 }
             )
 
-        const afterBalance = await vwblGateway.provider.getBalance(vwblGateway.address)
-        assert.deepEqual(afterBalance.sub(beforeBalance).eq(utils.parseEther("1.0")), true)
+        const afterBalance = await ethers.provider.getBalance(vwblGateway.target)
+        assert.equal(afterBalance - beforeBalance, ethers.parseEther("1.0"))
 
         const createdToken = await accessControlCheckerByERC1155.documentIdToToken(TEST_DOCUMENT_ID5)
-        assert.equal(createdToken.contractAddress, vwblMetadata.address)
+        assert.equal(createdToken.contractAddress, vwblMetadata.target)
 
         const isPermitted = await vwblGateway.hasAccessControl(accounts[2].address, TEST_DOCUMENT_ID5)
         assert.equal(isPermitted, true)

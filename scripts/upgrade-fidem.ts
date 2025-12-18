@@ -1,0 +1,34 @@
+import { ethers, upgrades } from "hardhat"
+import * as dotenv from "dotenv"
+dotenv.config()
+
+async function main() {
+    const proxyAddress = process.env.PROXY_ADDRESS
+
+    if (!proxyAddress) {
+        console.error("Error: PROXY_ADDRESS environment variable is not set")
+        console.error("Please set PROXY_ADDRESS to the deployed proxy contract address")
+        console.error("Example: PROXY_ADDRESS=0x1234... npx hardhat run scripts/upgrade-fidem.ts")
+        process.exit(1)
+    }
+
+    console.log("Upgrading VWBLFidemToken at proxy address:", proxyAddress)
+
+    // Get the new contract factory
+    const VWBLFidemToken = await ethers.getContractFactory("VWBLFidemToken")
+
+    console.log("Upgrading proxy...")
+    const upgraded = await upgrades.upgradeProxy(proxyAddress, VWBLFidemToken)
+
+    console.log("VWBLFidemToken upgraded successfully")
+    console.log("Proxy address (unchanged):", upgraded.target)
+
+    // Get new implementation address
+    const newImplAddress = await upgrades.erc1967.getImplementationAddress(upgraded.target)
+    console.log("New implementation deployed to:", newImplAddress)
+}
+
+main().catch((error) => {
+    console.error(error)
+    process.exitCode = 1
+})

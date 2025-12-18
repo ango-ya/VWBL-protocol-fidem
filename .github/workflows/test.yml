@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 16.x
+          node-version: 20.x
       - name: Install packages
         uses: borales/actions-yarn@v4
         with:
@@ -24,6 +24,10 @@ jobs:
         uses: borales/actions-yarn@v4
         with:
           cmd: lint
+      - name: Compile Contract
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: compile
       - name: Test Contract
         uses: borales/actions-yarn@v4
         with:
