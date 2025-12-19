@@ -22,8 +22,8 @@ describe("VWBLFidemToken", () => {
     const fee = ethers.parseEther("1.0")
     const baseURI = "https://example.com/metadata/"
 
-    let receiptIdCounter = 0
-    const getNextReceiptId = () => ++receiptIdCounter
+    let orderIdCounter = 0
+    const getNextOrderId = () => ++orderIdCounter
 
     beforeEach(async () => {
         accounts = await ethers.getSigners()
@@ -281,7 +281,7 @@ describe("VWBLFidemToken", () => {
             it("should mint token to customer", async () => {
                 await vwblFidemToken
                     .connect(tokenOwner)
-                    .mint(getNextReceiptId(), tokenId, customer1.address, ethers.parseEther("100"),  "STRIPE-123", {
+                    .mint(getNextOrderId(), tokenId, customer1.address, ethers.parseEther("100"), "JPY", "STRIPE-123", {
                         value: fee,
                     })
 
@@ -289,21 +289,22 @@ describe("VWBLFidemToken", () => {
                 expect(balance).to.equal(1)
             })
 
-            it("should create a receipt with correct data", async () => {
+            it("should create an order with correct data", async () => {
                 const saleAmount = ethers.parseEther("100")
 
                 const tx = await vwblFidemToken
                     .connect(tokenOwner)
-                    .mint(getNextReceiptId(), tokenId, customer1.address, saleAmount,  "STRIPE-123", { value: fee })
+                    .mint(getNextOrderId(), tokenId, customer1.address, saleAmount, "JPY", "STRIPE-123", { value: fee })
 
                 const receipt = await tx.wait()
-                const receiptId = (() => { const log = receipt.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.receiptId; })()
+                const orderId = (() => { const log = receipt.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.orderId; })()
 
-                const storedReceipt = await vwblFidemToken.getReceipt(receiptId)
-                expect(storedReceipt.tokenId).to.equal(tokenId)
-                expect(storedReceipt.customer).to.equal(customer1.address)
-                expect(storedReceipt.saleAmount).to.equal(saleAmount)
-                expect(storedReceipt.paymentInvoiceId).to.equal("STRIPE-123")
+                const storedOrder = await vwblFidemToken.getOrder(orderId)
+                expect(storedOrder.tokenId).to.equal(tokenId)
+                expect(storedOrder.customer).to.equal(customer1.address)
+                expect(storedOrder.saleAmount).to.equal(saleAmount)
+                expect(storedOrder.currency).to.equal("JPY")
+                expect(storedOrder.paymentInvoiceId).to.equal("STRIPE-123")
             })
 
             it("should store immutable snapshot of revenue share at purchase time", async () => {
@@ -312,15 +313,15 @@ describe("VWBLFidemToken", () => {
                 // First purchase with original share configuration [6000, 4000]
                 const tx1 = await vwblFidemToken
                     .connect(tokenOwner)
-                    .mint(getNextReceiptId(), tokenId, customer1.address, saleAmount,  "STRIPE-123", { value: fee })
+                    .mint(getNextOrderId(), tokenId, customer1.address, saleAmount, "JPY", "STRIPE-123", { value: fee })
 
                 const receipt1 = await tx1.wait()
-                const receiptId1 = (() => { const log = receipt1.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.receiptId; })()
+                const orderId1 = (() => { const log = receipt1.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.orderId; })()
 
-                // Verify first receipt has original shares
-                const storedReceipt1 = await vwblFidemToken.getReceipt(receiptId1)
-                expect(storedReceipt1.recipients).to.deep.equal([recipient1.address, recipient2.address])
-                expect(storedReceipt1.shares.map((s: any) => s)).to.deep.equal([6000, 4000])
+                // Verify first order has original shares
+                const storedOrder1 = await vwblFidemToken.getOrder(orderId1)
+                expect(storedOrder1.recipients).to.deep.equal([recipient1.address, recipient2.address])
+                expect(storedOrder1.shares.map((s: any) => s)).to.deep.equal([6000, 4000])
 
                 // Update revenue share configuration to [5000, 5000]
                 const newRecipients = [recipient1.address, recipient2.address]
@@ -330,32 +331,32 @@ describe("VWBLFidemToken", () => {
                 // Second purchase with new share configuration [5000, 5000]
                 const tx2 = await vwblFidemToken
                     .connect(tokenOwner)
-                    .mint(getNextReceiptId(), tokenId, customer2.address, saleAmount,  "STRIPE-456", { value: fee })
+                    .mint(getNextOrderId(), tokenId, customer2.address, saleAmount, "JPY", "STRIPE-456", { value: fee })
 
                 const receipt2 = await tx2.wait()
-                const receiptId2 = (() => { const log = receipt2.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.receiptId; })()
+                const orderId2 = (() => { const log = receipt2.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.orderId; })()
 
-                // Verify second receipt has new shares
-                const storedReceipt2 = await vwblFidemToken.getReceipt(receiptId2)
-                expect(storedReceipt2.recipients).to.deep.equal([recipient1.address, recipient2.address])
-                expect(storedReceipt2.shares.map((s: any) => s)).to.deep.equal([5000, 5000])
+                // Verify second order has new shares
+                const storedOrder2 = await vwblFidemToken.getOrder(orderId2)
+                expect(storedOrder2.recipients).to.deep.equal([recipient1.address, recipient2.address])
+                expect(storedOrder2.shares.map((s: any) => s)).to.deep.equal([5000, 5000])
 
-                // CRITICAL: Verify first receipt STILL has original shares (immutable)
-                const storedReceipt1Again = await vwblFidemToken.getReceipt(receiptId1)
-                expect(storedReceipt1Again.recipients).to.deep.equal([recipient1.address, recipient2.address])
-                expect(storedReceipt1Again.shares.map((s: any) => s)).to.deep.equal([6000, 4000])
+                // CRITICAL: Verify first order STILL has original shares (immutable)
+                const storedOrder1Again = await vwblFidemToken.getOrder(orderId1)
+                expect(storedOrder1Again.recipients).to.deep.equal([recipient1.address, recipient2.address])
+                expect(storedOrder1Again.shares.map((s: any) => s)).to.deep.equal([6000, 4000])
             })
 
-            it("should emit TokenMinted and ReceiptCreated events", async () => {
+            it("should emit TokenMinted and OrderCreated events", async () => {
                 const saleAmount = ethers.parseEther("100")
 
                 await expect(
                     vwblFidemToken
                         .connect(tokenOwner)
-                        .mint(getNextReceiptId(), tokenId, customer1.address, saleAmount,  "STRIPE-123", { value: fee })
+                        .mint(getNextOrderId(), tokenId, customer1.address, saleAmount, "JPY", "STRIPE-123", { value: fee })
                 )
                     .to.emit(vwblFidemToken, "TokenMinted")
-                    .and.to.emit(vwblFidemToken, "ReceiptCreated")
+                    .and.to.emit(vwblFidemToken, "OrderCreated")
             })
         })
 
@@ -364,7 +365,7 @@ describe("VWBLFidemToken", () => {
                 await expect(
                     vwblFidemToken
                         .connect(customer1)
-                        .mint(getNextReceiptId(), tokenId, customer2.address, ethers.parseEther("100"),  "STRIPE-123", {
+                        .mint(getNextOrderId(), tokenId, customer2.address, ethers.parseEther("100"), "JPY", "STRIPE-123", {
                             value: fee,
                         })
                 ).to.be.reverted // AccessControl will revert
@@ -378,7 +379,7 @@ describe("VWBLFidemToken", () => {
                 await expect(
                     vwblFidemToken
                         .connect(tokenOwner)
-                        .mint(getNextReceiptId(), tokenId, customer1.address, ethers.parseEther("100"),  "STRIPE-123", {
+                        .mint(getNextOrderId(), tokenId, customer1.address, ethers.parseEther("100"), "JPY", "STRIPE-123", {
                             value: insufficientFee,
                         })
                 ).to.be.revertedWith("Insufficient VWBL fee")
@@ -390,7 +391,7 @@ describe("VWBLFidemToken", () => {
                 await expect(
                     vwblFidemToken
                         .connect(tokenOwner)
-                        .mint(getNextReceiptId(), tokenId, ethers.ZeroAddress, ethers.parseEther("100"),  "STRIPE-123", {
+                        .mint(getNextOrderId(), tokenId, ethers.ZeroAddress, ethers.parseEther("100"), "JPY", "STRIPE-123", {
                             value: fee,
                         })
                 ).to.be.revertedWith("Invalid customer address")
@@ -404,7 +405,7 @@ describe("VWBLFidemToken", () => {
 
                 const tx = await vwblFidemToken
                     .connect(tokenOwner)
-                    .mint(getNextReceiptId(), tokenId, customer1.address, ethers.parseEther("100"),  "STRIPE-123", {
+                    .mint(getNextOrderId(), tokenId, customer1.address, ethers.parseEther("100"), "JPY", "STRIPE-123", {
                         value: excessFee,
                     })
                 const receipt = await tx.wait()
@@ -473,13 +474,14 @@ describe("VWBLFidemToken", () => {
                     ethers.parseEther("200"),
                     ethers.parseEther("300"),
                 ]
+                const currencies = ["JPY", "USD", "EUR"]
                 const invoiceIds = ["STRIPE-1", "STRIPE-2", "STRIPE-3"]
                 const totalFee = fee * BigInt(batchSize)
 
-                const receiptIds = [getNextReceiptId(), getNextReceiptId(), getNextReceiptId()]
+                const orderIds = [getNextOrderId(), getNextOrderId(), getNextOrderId()]
                 const tx = await vwblFidemToken
                     .connect(tokenOwner)
-                    .mintBatch(receiptIds, tokenIds, customers, saleAmounts, invoiceIds, { value: totalFee })
+                    .mintBatch(orderIds, tokenIds, customers, saleAmounts, currencies, invoiceIds, { value: totalFee })
 
                 // Verify all customers received their tokens
                 expect(await vwblFidemToken.balanceOf(customer1.address, tokenId)).to.equal(1)
@@ -487,7 +489,7 @@ describe("VWBLFidemToken", () => {
                 expect(await vwblFidemToken.balanceOf(recipient1.address, tokenId)).to.equal(1)
             })
 
-            it("should create receipts for all mints", async () => {
+            it("should create orders for all mints", async () => {
                 const batchSize = 3
                 const tokenIds = [tokenId, tokenId, tokenId]
                 const customers = [customer1.address, customer2.address, recipient1.address]
@@ -496,53 +498,58 @@ describe("VWBLFidemToken", () => {
                     ethers.parseEther("200"),
                     ethers.parseEther("300"),
                 ]
+                const currencies = ["JPY", "USD", "EUR"]
                 const invoiceIds = ["STRIPE-1", "STRIPE-2", "STRIPE-3"]
                 const totalFee = fee * BigInt(batchSize)
 
-                const inputReceiptIds = [getNextReceiptId(), getNextReceiptId(), getNextReceiptId()]
+                const inputOrderIds = [getNextOrderId(), getNextOrderId(), getNextOrderId()]
                 const tx = await vwblFidemToken
                     .connect(tokenOwner)
-                    .mintBatch(inputReceiptIds, tokenIds, customers, saleAmounts, invoiceIds, { value: totalFee })
+                    .mintBatch(inputOrderIds, tokenIds, customers, saleAmounts, currencies, invoiceIds, { value: totalFee })
 
                 const receipt = await tx.wait()
 
-                // Get receipt IDs for the token
-                const receiptIds = await vwblFidemToken.getReceiptsByToken(tokenId)
-                expect(receiptIds.length).to.equal(3)
+                // Get order IDs for the token
+                const orderIds = await vwblFidemToken.getOrdersByToken(tokenId)
+                expect(orderIds.length).to.equal(3)
 
-                // Fetch and verify receipt data
-                const receipt0 = await vwblFidemToken.getReceipt(receiptIds[0])
-                expect(receipt0.customer).to.equal(customer1.address)
-                expect(receipt0.saleAmount).to.equal(saleAmounts[0])
-                expect(receipt0.paymentInvoiceId).to.equal("STRIPE-1")
+                // Fetch and verify order data
+                const order0 = await vwblFidemToken.getOrder(orderIds[0])
+                expect(order0.customer).to.equal(customer1.address)
+                expect(order0.saleAmount).to.equal(saleAmounts[0])
+                expect(order0.currency).to.equal("JPY")
+                expect(order0.paymentInvoiceId).to.equal("STRIPE-1")
 
-                const receipt1 = await vwblFidemToken.getReceipt(receiptIds[1])
-                expect(receipt1.customer).to.equal(customer2.address)
-                expect(receipt1.saleAmount).to.equal(saleAmounts[1])
-                expect(receipt1.paymentInvoiceId).to.equal("STRIPE-2")
+                const order1 = await vwblFidemToken.getOrder(orderIds[1])
+                expect(order1.customer).to.equal(customer2.address)
+                expect(order1.saleAmount).to.equal(saleAmounts[1])
+                expect(order1.currency).to.equal("USD")
+                expect(order1.paymentInvoiceId).to.equal("STRIPE-2")
 
-                const receipt2 = await vwblFidemToken.getReceipt(receiptIds[2])
-                expect(receipt2.customer).to.equal(recipient1.address)
-                expect(receipt2.saleAmount).to.equal(saleAmounts[2])
-                expect(receipt2.paymentInvoiceId).to.equal("STRIPE-3")
+                const order2 = await vwblFidemToken.getOrder(orderIds[2])
+                expect(order2.customer).to.equal(recipient1.address)
+                expect(order2.saleAmount).to.equal(saleAmounts[2])
+                expect(order2.currency).to.equal("EUR")
+                expect(order2.paymentInvoiceId).to.equal("STRIPE-3")
             })
 
-            it("should return array of receipt IDs", async () => {
+            it("should return array of order IDs", async () => {
                 const batchSize = 2
                 const tokenIds = [tokenId, tokenId]
                 const customers = [customer1.address, customer2.address]
                 const saleAmounts = [ethers.parseEther("100"), ethers.parseEther("200")]
+                const currencies = ["JPY", "USD"]
                 const invoiceIds = ["STRIPE-1", "STRIPE-2"]
                 const totalFee = fee * BigInt(batchSize)
 
-                const receiptIds = [getNextReceiptId(), getNextReceiptId()]
+                const orderIds = [getNextOrderId(), getNextOrderId()]
                 const tx = await vwblFidemToken
                     .connect(tokenOwner)
-                    .mintBatch(receiptIds, tokenIds, customers, saleAmounts, invoiceIds, { value: totalFee })
+                    .mintBatch(orderIds, tokenIds, customers, saleAmounts, currencies, invoiceIds, { value: totalFee })
 
                 const receipt = await tx.wait()
 
-                // Extract receipt IDs from events (mintBatch should return them but we verify via events)
+                // Extract order IDs from events (mintBatch should return them but we verify via events)
                 const mintedEvents = receipt.logs
                     .map(log => {
                         try {
@@ -561,16 +568,17 @@ describe("VWBLFidemToken", () => {
                 const tokenIds = [tokenId, tokenId]
                 const customers = [customer1.address, customer2.address]
                 const saleAmounts = [ethers.parseEther("100"), ethers.parseEther("200")]
+                const currencies = ["JPY", "USD"]
                 const invoiceIds = ["STRIPE-1", "STRIPE-2"]
                 const totalFee = fee * BigInt(batchSize)
                 const excessFee = totalFee + ethers.parseEther("1.0")
 
                 const balanceBefore = await ethers.provider.getBalance(tokenOwner.address)
 
-                const receiptIds = [getNextReceiptId(), getNextReceiptId()]
+                const orderIds = [getNextOrderId(), getNextOrderId()]
                 const tx = await vwblFidemToken
                     .connect(tokenOwner)
-                    .mintBatch(receiptIds, tokenIds, customers, saleAmounts, invoiceIds, { value: excessFee })
+                    .mintBatch(orderIds, tokenIds, customers, saleAmounts, currencies, invoiceIds, { value: excessFee })
 
                 const receipt = await tx.wait()
                 const balanceAfter = await ethers.provider.getBalance(tokenOwner.address)
@@ -587,18 +595,19 @@ describe("VWBLFidemToken", () => {
                 const tokenIds = [tokenId, tokenId]
                 const customers = [customer1.address] // Wrong length
                 const saleAmounts = [ethers.parseEther("100"), ethers.parseEther("200")]
+                const currencies = ["JPY", "USD"]
                 const invoiceIds = ["STRIPE-1", "STRIPE-2"]
 
                 await expect(
                     vwblFidemToken
                         .connect(tokenOwner)
-                        .mintBatch([getNextReceiptId(), getNextReceiptId()], tokenIds, customers, saleAmounts, invoiceIds, { value: fee * 2n })
+                        .mintBatch([getNextOrderId(), getNextOrderId()], tokenIds, customers, saleAmounts, currencies, invoiceIds, { value: fee * 2n })
                 ).to.be.revertedWith("Customers length mismatch")
             })
 
             it("should revert if batch is empty", async () => {
                 await expect(
-                    vwblFidemToken.connect(tokenOwner).mintBatch([], [], [], [], [], { value: fee })
+                    vwblFidemToken.connect(tokenOwner).mintBatch([], [], [], [], [], [], { value: fee })
                 ).to.be.revertedWith("Empty batch")
             })
 
@@ -611,13 +620,14 @@ describe("VWBLFidemToken", () => {
                     ethers.parseEther("200"),
                     ethers.parseEther("300"),
                 ]
+                const currencies = ["JPY", "USD", "EUR"]
                 const invoiceIds = ["STRIPE-1", "STRIPE-2", "STRIPE-3"]
                 const insufficientFee = fee * 2n // Only 2 ETH for 3 mints
 
                 await expect(
                     vwblFidemToken
                         .connect(tokenOwner)
-                        .mintBatch([getNextReceiptId(), getNextReceiptId(), getNextReceiptId()], tokenIds, customers, saleAmounts, invoiceIds, { value: insufficientFee })
+                        .mintBatch([getNextOrderId(), getNextOrderId(), getNextOrderId()], tokenIds, customers, saleAmounts, currencies, invoiceIds, { value: insufficientFee })
                 ).to.be.revertedWith("Insufficient VWBL fee for batch")
             })
 
@@ -625,12 +635,13 @@ describe("VWBLFidemToken", () => {
                 const tokenIds = [tokenId, tokenId]
                 const customers = [customer1.address, ethers.ZeroAddress]
                 const saleAmounts = [ethers.parseEther("100"), ethers.parseEther("200")]
+                const currencies = ["JPY", "USD"]
                 const invoiceIds = ["STRIPE-1", "STRIPE-2"]
 
                 await expect(
                     vwblFidemToken
                         .connect(tokenOwner)
-                        .mintBatch([getNextReceiptId(), getNextReceiptId()], tokenIds, customers, saleAmounts, invoiceIds, { value: fee * 2n })
+                        .mintBatch([getNextOrderId(), getNextOrderId()], tokenIds, customers, saleAmounts, currencies, invoiceIds, { value: fee * 2n })
                 ).to.be.revertedWith("Invalid customer address")
             })
 
@@ -639,12 +650,13 @@ describe("VWBLFidemToken", () => {
                 const tokenIds = [tokenId, nonExistentTokenId]
                 const customers = [customer1.address, customer2.address]
                 const saleAmounts = [ethers.parseEther("100"), ethers.parseEther("200")]
+                const currencies = ["JPY", "USD"]
                 const invoiceIds = ["STRIPE-1", "STRIPE-2"]
 
                 await expect(
                     vwblFidemToken
                         .connect(tokenOwner)
-                        .mintBatch([getNextReceiptId(), getNextReceiptId()], tokenIds, customers, saleAmounts, invoiceIds, { value: fee * 2n })
+                        .mintBatch([getNextOrderId(), getNextOrderId()], tokenIds, customers, saleAmounts, currencies, invoiceIds, { value: fee * 2n })
                 ).to.be.revertedWith("Token does not exist")
             })
         })
@@ -654,12 +666,13 @@ describe("VWBLFidemToken", () => {
                 const tokenIds = [tokenId]
                 const customers = [customer1.address]
                 const saleAmounts = [ethers.parseEther("100")]
+                const currencies = ["JPY"]
                 const invoiceIds = ["STRIPE-1"]
 
                 await expect(
                     vwblFidemToken
                         .connect(customer1)
-                        .mintBatch([getNextReceiptId()], tokenIds, customers, saleAmounts, invoiceIds, { value: fee })
+                        .mintBatch([getNextOrderId()], tokenIds, customers, saleAmounts, currencies, invoiceIds, { value: fee })
                 ).to.be.reverted
             })
         })
@@ -875,7 +888,7 @@ describe("VWBLFidemToken", () => {
             // Mint to customer
             await vwblFidemToken
                 .connect(tokenOwner)
-                .mint(getNextReceiptId(), tokenId, customer1.address, ethers.parseEther("100"),  "STRIPE-123", { value: fee })
+                .mint(getNextOrderId(), tokenId, customer1.address, ethers.parseEther("100"), "JPY", "STRIPE-123", { value: fee })
         })
 
         context("When attempting normal transfer", () => {
@@ -968,10 +981,10 @@ describe("VWBLFidemToken", () => {
         })
     })
 
-    describe("Receipt Query Functions", () => {
+    describe("Order Query Functions", () => {
         let tokenId: number
-        let receiptId1: number
-        let receiptId2: number
+        let orderId1: number
+        let orderId2: number
 
         beforeEach(async () => {
             const VWBLFidemToken = await ethers.getContractFactory("VWBLFidemToken")
@@ -1001,58 +1014,58 @@ describe("VWBLFidemToken", () => {
             // Mint to customer1
             const tx1 = await vwblFidemToken
                 .connect(tokenOwner)
-                .mint(getNextReceiptId(), tokenId, customer1.address, ethers.parseEther("100"),  "STRIPE-123", { value: fee })
+                .mint(getNextOrderId(), tokenId, customer1.address, ethers.parseEther("100"), "JPY", "STRIPE-123", { value: fee })
             const receipt1 = await tx1.wait()
-            receiptId1 = (() => { const log = receipt1.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.receiptId; })()
+            orderId1 = (() => { const log = receipt1.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.orderId; })()
 
             // Mint to customer2
             const tx2 = await vwblFidemToken
                 .connect(tokenOwner)
-                .mint(getNextReceiptId(), tokenId, customer2.address, ethers.parseEther("50"),  "STRIPE-124", { value: fee })
+                .mint(getNextOrderId(), tokenId, customer2.address, ethers.parseEther("50"), "JPY", "STRIPE-124", { value: fee })
             const receipt2 = await tx2.wait()
-            receiptId2 = (() => { const log = receipt2.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.receiptId; })()
+            orderId2 = (() => { const log = receipt2.logs.find(l => { try { const parsed = vwblFidemToken.interface.parseLog(l); return parsed?.name === "TokenMinted"; } catch { return false; } }); if (!log) return undefined; return vwblFidemToken.interface.parseLog(log).args.orderId; })()
         })
 
-        it("should retrieve receipt by ID", async () => {
-            const receipt = await vwblFidemToken.getReceipt(receiptId1)
+        it("should retrieve order by ID", async () => {
+            const order = await vwblFidemToken.getOrder(orderId1)
 
-            expect(receipt.receiptId).to.equal(receiptId1)
-            expect(receipt.customer).to.equal(customer1.address)
+            expect(order.orderId).to.equal(orderId1)
+            expect(order.customer).to.equal(customer1.address)
         })
 
-        it("should get all receipts for a token", async () => {
-            const receiptIds = await vwblFidemToken.getReceiptsByToken(tokenId)
+        it("should get all orders for a token", async () => {
+            const orderIds = await vwblFidemToken.getOrdersByToken(tokenId)
 
-            expect(receiptIds.length).to.equal(2)
-            expect(receiptIds[0]).to.equal(receiptId1)
-            expect(receiptIds[1]).to.equal(receiptId2)
+            expect(orderIds.length).to.equal(2)
+            expect(orderIds[0]).to.equal(orderId1)
+            expect(orderIds[1]).to.equal(orderId2)
         })
 
-        it("should get all receipts for a customer", async () => {
-            const receiptIds = await vwblFidemToken.getReceiptsByCustomer(customer1.address)
+        it("should get all orders for a customer", async () => {
+            const orderIds = await vwblFidemToken.getOrdersByCustomer(customer1.address)
 
-            expect(receiptIds.length).to.equal(1)
-            expect(receiptIds[0]).to.equal(receiptId1)
+            expect(orderIds.length).to.equal(1)
+            expect(orderIds[0]).to.equal(orderId1)
         })
 
-        it("should get receipt count for a token", async () => {
-            const count = await vwblFidemToken.getReceiptCountByToken(tokenId)
+        it("should get order count for a token", async () => {
+            const count = await vwblFidemToken.getOrderCountByToken(tokenId)
             expect(count).to.equal(2)
         })
 
-        it("should get receipt count for a customer", async () => {
-            const count = await vwblFidemToken.getReceiptCountByCustomer(customer1.address)
+        it("should get order count for a customer", async () => {
+            const count = await vwblFidemToken.getOrderCountByCustomer(customer1.address)
             expect(count).to.equal(1)
         })
 
-        it("should paginate receipts for a token", async () => {
-            const receipts = await vwblFidemToken.getReceiptsByTokenPaginated(tokenId, 0, 1)
+        it("should paginate orders for a token", async () => {
+            const orders = await vwblFidemToken.getOrdersByTokenPaginated(tokenId, 0, 1)
 
-            expect(receipts.length).to.equal(1)
-            expect(receipts[0].receiptId).to.equal(receiptId1)
+            expect(orders.length).to.equal(1)
+            expect(orders[0].orderId).to.equal(orderId1)
         })
 
-        it("should return empty array for token with no receipts", async () => {
+        it("should return empty array for token with no orders", async () => {
             // Create a new token without minting
             const newRecipients = [recipient1.address]
             const newShares = [10000]
@@ -1077,8 +1090,8 @@ describe("VWBLFidemToken", () => {
             const newTokenId = event?.args[0]
 
             // Should return empty array, not revert
-            const receipts = await vwblFidemToken.getReceiptsByTokenPaginated(newTokenId, 0, 10)
-            expect(receipts.length).to.equal(0)
+            const orders = await vwblFidemToken.getOrdersByTokenPaginated(newTokenId, 0, 10)
+            expect(orders.length).to.equal(0)
         })
     })
 
@@ -1116,16 +1129,17 @@ describe("VWBLFidemToken", () => {
 
         it("should handle batch size of 20", async () => {
             const batchSize = 20
-            const receiptIds = Array.from({ length: batchSize }, () => getNextReceiptId())
+            const orderIds = Array.from({ length: batchSize }, () => getNextOrderId())
             const tokenIds = Array(batchSize).fill(tokenId)
             const customers = Array(batchSize).fill(customer1.address)
             const saleAmounts = Array(batchSize).fill(ethers.parseEther("100"))
+            const currencies = Array(batchSize).fill("JPY")
             const invoiceIds = Array.from({ length: batchSize }, (_, i) => `INVOICE-${i}`)
             const totalFee = fee * BigInt(batchSize)
 
             const tx = await vwblFidemToken
                 .connect(tokenOwner)
-                .mintBatch(receiptIds, tokenIds, customers, saleAmounts, invoiceIds, { value: totalFee })
+                .mintBatch(orderIds, tokenIds, customers, saleAmounts, currencies, invoiceIds, { value: totalFee })
 
             const receipt = await tx.wait()
             expect(receipt.status).to.equal(1)
