@@ -52,7 +52,7 @@ contract VWBLFidemToken is
     }
 
     struct MintReceipt {
-        uint256 orderId;
+        string orderId;
         uint256 tokenId;
         address customer;
         uint256 saleAmount;
@@ -79,9 +79,9 @@ contract VWBLFidemToken is
     // ============ VWBLFidemToken Specific Storage ============
 
     mapping(uint256 => RevenueShareConfig) public tokenIdToRevenueShare;
-    mapping(uint256 => MintReceipt) public orders;
-    mapping(uint256 => uint256[]) public tokenIdToOrders;
-    mapping(address => uint256[]) public customerToOrders;
+    mapping(string => MintReceipt) public orders;
+    mapping(uint256 => string[]) public tokenIdToOrders;
+    mapping(address => string[]) public customerToOrders;
     mapping(uint256 => mapping(address => TransferStatus)) public transferStatus;
     mapping(uint256 => RevenueShareHistory[]) public revenueShareHistory;
 
@@ -103,7 +103,7 @@ contract VWBLFidemToken is
     event TokenCreated(uint256 indexed tokenId, bytes32 documentId, address[] recipients, uint256[] shares);
 
     event TokenMinted(
-        uint256 indexed orderId,
+        string orderId,
         uint256 indexed tokenId,
         address indexed customer,
         uint256 saleAmount,
@@ -123,7 +123,7 @@ contract VWBLFidemToken is
 
     event TransferByOwner(address indexed from, address indexed to, uint256 indexed tokenId, uint256 amount);
 
-    event OrderCreated(uint256 indexed orderId, uint256 indexed tokenId, address indexed customer);
+    event OrderCreated(string orderId, uint256 indexed tokenId, address indexed customer);
 
     // ============ Constructor & Initializer ============
 
@@ -250,7 +250,7 @@ contract VWBLFidemToken is
      * @param paymentInvoiceId Payment platform's invoice ID (string)
      */
     function mint(
-        uint256 orderId,
+        string memory orderId,
         uint256 tokenId,
         address customer,
         uint256 saleAmount,
@@ -282,7 +282,7 @@ contract VWBLFidemToken is
      * @param paymentInvoiceIds Array of payment platform's invoice IDs
      */
     function mintBatch(
-        uint256[] memory orderIds,
+        string[] memory orderIds,
         uint256[] memory tokenIds,
         address[] memory customers,
         uint256[] memory saleAmounts,
@@ -331,7 +331,7 @@ contract VWBLFidemToken is
      * @dev Internal function to process a single mint
      */
     function _processMint(
-        uint256 orderId,
+        string memory orderId,
         uint256 tokenId,
         address customer,
         uint256 saleAmount,
@@ -341,8 +341,8 @@ contract VWBLFidemToken is
         address gatewayAddr
     ) private {
         // Validate inputs
-        require(orderId > 0, "OrderId must be greater than 0");
-        require(orders[orderId].orderId == 0, "OrderId already exists");
+        require(bytes(orderId).length > 0, "OrderId must not be empty");
+        require(bytes(orders[orderId].orderId).length == 0, "OrderId already exists");
         require(customer != address(0), "Invalid customer address");
         require(tokenIdToTokenInfo[tokenId].minterAddress != address(0), "Token does not exist");
 
@@ -549,21 +549,21 @@ contract VWBLFidemToken is
     /**
      * @notice Get order by ID
      */
-    function getOrder(uint256 orderId) public view returns (MintReceipt memory) {
+    function getOrder(string memory orderId) public view returns (MintReceipt memory) {
         return orders[orderId];
     }
 
     /**
      * @notice Get all order IDs for a token
      */
-    function getOrdersByToken(uint256 tokenId) public view returns (uint256[] memory) {
+    function getOrdersByToken(uint256 tokenId) public view returns (string[] memory) {
         return tokenIdToOrders[tokenId];
     }
 
     /**
      * @notice Get all order IDs for a customer
      */
-    function getOrdersByCustomer(address customer) public view returns (uint256[] memory) {
+    function getOrdersByCustomer(address customer) public view returns (string[] memory) {
         return customerToOrders[customer];
     }
 
@@ -589,7 +589,7 @@ contract VWBLFidemToken is
         uint256 offset,
         uint256 limit
     ) public view returns (MintReceipt[] memory) {
-        uint256[] memory orderIds = tokenIdToOrders[tokenId];
+        string[] memory orderIds = tokenIdToOrders[tokenId];
 
         // Return empty array if no orders exist
         if (orderIds.length == 0) {

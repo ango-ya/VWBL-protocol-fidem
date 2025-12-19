@@ -23,7 +23,7 @@ describe("VWBLFidemToken", () => {
     const baseURI = "https://example.com/metadata/"
 
     let orderIdCounter = 0
-    const getNextOrderId = () => ++orderIdCounter
+    const getNextOrderId = () => `ORDER-${++orderIdCounter}`
 
     beforeEach(async () => {
         accounts = await ethers.getSigners()
@@ -983,8 +983,8 @@ describe("VWBLFidemToken", () => {
 
     describe("Order Query Functions", () => {
         let tokenId: number
-        let orderId1: number
-        let orderId2: number
+        let orderId1: string
+        let orderId2: string
 
         beforeEach(async () => {
             const VWBLFidemToken = await ethers.getContractFactory("VWBLFidemToken")
