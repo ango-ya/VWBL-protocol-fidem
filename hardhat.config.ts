@@ -14,8 +14,9 @@ const config: HardhatUserConfig = {
         settings: {
             optimizer: {
                 enabled: true,
-                runs: 200,
+                runs: 1, // Lower runs to reduce deployment size (bytecode)
             },
+            viaIR: true, // Use intermediate representation for better optimization
         },
     },
     networks: {
@@ -55,6 +56,11 @@ const config: HardhatUserConfig = {
         joc_testnet: {
             url: process.env.JOC_TESTNET_URL || "",
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : []
+        },
+        optimism_sepolia: {
+            url: process.env.OPTIMISM_SEPOLIA_URL || "https://optimism-sepolia.infura.io/v3/YOUR_INFURA_KEY",
+            accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+            chainId: 11155420
         }
     },
     typechain: {
