@@ -53,16 +53,18 @@ async function main() {
         }
     )
 
-    await proxy.deployed()
+    await proxy.waitForDeployment()
 
-    console.log("VWBLFidemToken proxy deployed to:", proxy.address)
+    const proxyAddress = await proxy.getAddress()
+    console.log("VWBLFidemToken proxy deployed to:", proxyAddress)
 
     // Get implementation address
-    const implAddress = await upgrades.erc1967.getImplementationAddress(proxy.address)
+    const implAddress = await upgrades.erc1967.getImplementationAddress(proxyAddress)
     console.log("Implementation deployed to:", implAddress)
 
-    // Get admin address (for UUPS, this is typically the proxy itself)
-    console.log("Proxy admin:", await proxy.owner())
+    // For UUPS, the proxy itself manages upgrades via AccessControl
+    console.log("\nDeployment complete!")
+    console.log("The deployer has been granted DEFAULT_ADMIN_ROLE and MINTER_ROLE")
 }
 
 // We recommend this pattern to be able to use async/await everywhere
