@@ -58,7 +58,7 @@ const config: HardhatUserConfig = {
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : []
         },
         optimism_sepolia: {
-            url: process.env.OPTIMISM_SEPOLIA_URL || "https://optimism-sepolia.infura.io/v3/YOUR_INFURA_KEY",
+            url: process.env.OPTIMISM_SEPOLIA_URL || "",
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
             chainId: 11155420
         }
