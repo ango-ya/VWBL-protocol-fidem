@@ -61,6 +61,11 @@ const config: HardhatUserConfig = {
             url: process.env.OPTIMISM_SEPOLIA_URL || "",
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
             chainId: 11155420
+        },
+        optimism: {
+            url: process.env.OPTIMISM_URL || "",
+            accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+            chainId: 10
         }
     },
     typechain: {
