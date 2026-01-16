@@ -2,7 +2,7 @@
 import { ethers } from "hardhat"
 
 async function main() {
-    console.log("Deploying VWBL dependencies to Optimism Sepolia...")
+    console.log("Deploying VWBL dependencies...")
 
     // 1. Deploy VWBLGateway (implementation)
     console.log("\n1. Deploying VWBLGateway...")

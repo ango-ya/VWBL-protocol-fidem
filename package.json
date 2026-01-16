@@ -29,7 +29,8 @@
     "deploy:aurora_testnet": "env-cmd -f ./config/.env.aurora_testnet hardhat run --network aurora_testnet scripts/deploy.ts",
     "deploy:joc": "env-cmd -f ./config/.env.joc hardhat run --network joc scripts/deploy.ts",
     "deploy:joc_testnet": "env-cmd -f ./config/.env.joc_testnet hardhat run --network joc_testnet scripts/deploy.ts",
-    "deploy:optimism": "env-cmd -f ./config/.env.optimism hardhat run --network optimism scripts/deploy.ts",
+    "deploy:optimism": "env-cmd -f ./config/.env.optimism hardhat run --network optimism scripts/deploy-fidem.ts",
+    "deploy:dependencies:optimism": "env-cmd -f ./config/.env.optimism hardhat run --network optimism scripts/deploy-dependencies.ts",
     "verify": "hardhat verify"
   },
   "devDependencies": {
