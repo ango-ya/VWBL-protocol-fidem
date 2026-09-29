@@ -5,10 +5,10 @@
 //
 // Usage:
 //   PROXY_ADDRESS=0x... MINTER_ADDRESS=0x... \
-//     env-cmd -f ./config/.env.optimism hardhat run --network optimism scripts/grant-minter-role.ts
+//     env-cmd -f ./config/.env.base hardhat run --network base scripts/grant-minter-role.ts
 //
-// Or via the package.json shortcut (reads config/.env.optimism):
-//   PROXY_ADDRESS=0x... MINTER_ADDRESS=0x... yarn grant-minter:optimism
+// Or via the package.json shortcut (reads config/.env.base):
+//   PROXY_ADDRESS=0x... MINTER_ADDRESS=0x... yarn grant-minter:base
 import { ethers } from "hardhat"
 import * as dotenv from "dotenv"
 dotenv.config()

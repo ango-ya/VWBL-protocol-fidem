@@ -66,6 +66,16 @@ const config: HardhatUserConfig = {
             url: process.env.OPTIMISM_URL || "",
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
             chainId: 10
+        },
+        base_sepolia: {
+            url: process.env.BASE_SEPOLIA_URL || "",
+            accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+            chainId: 84532
+        },
+        base: {
+            url: process.env.BASE_URL || "",
+            accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+            chainId: 8453
         }
     },
     typechain: {

@@ -31,7 +31,7 @@
     "deploy:joc_testnet": "env-cmd -f ./config/.env.joc_testnet hardhat run --network joc_testnet scripts/deploy.ts",
     "deploy:optimism": "env-cmd -f ./config/.env.optimism hardhat run --network optimism scripts/deploy-fidem.ts",
     "deploy:dependencies:optimism": "env-cmd -f ./config/.env.optimism hardhat run --network optimism scripts/deploy-dependencies.ts",
-    "grant-minter:optimism": "env-cmd -f ./config/.env.optimism hardhat run --network optimism scripts/grant-minter-role.ts",
+    "grant-minter:base": "env-cmd -f ./config/.env.base hardhat run --network base scripts/grant-minter-role.ts",
     "verify": "hardhat verify"
   },
   "devDependencies": {
