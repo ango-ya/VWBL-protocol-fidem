@@ -68,9 +68,20 @@ async function main() {
     const receipt = await tx.wait()
     console.log("Confirmed in block:", receipt?.blockNumber)
 
-    const granted = await token.hasRole(MINTER_ROLE, minterAddress)
+    // Verify with retries. Load-balanced public RPCs (e.g. mainnet.base.org) can
+    // route a read to a node that has not yet synced the mined block, so a single
+    // read-after-write may return a stale (false) result even though the grant
+    // succeeded. Poll until the state is observed or the attempts are exhausted.
+    let granted = false
+    for (let attempt = 1; attempt <= 10; attempt++) {
+        granted = await token.hasRole(MINTER_ROLE, minterAddress)
+        if (granted) break
+        console.log(`Verifying MINTER_ROLE... (attempt ${attempt}, not yet visible, retrying)`)
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+    }
     if (!granted) {
-        console.error("Error: grantRole transaction mined but MINTER_ROLE is still not set")
+        console.error("Error: grantRole transaction mined but MINTER_ROLE is still not visible after retries")
+        console.error("The transaction may still have succeeded; re-check hasRole on a synced RPC endpoint")
         process.exit(1)
     }
 
